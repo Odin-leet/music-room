@@ -1,0 +1,14 @@
+{
+  "name": "music-room",
+  "private": true,
+  "description": "Music Room — monorepo root. Workspaces: apps/api (NestJS), apps/mobile (React Native/Expo), packages/shared (types shared between them).",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present"
+  }
+}

@@ -1,0 +1,23 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: music-room-postgres
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${DB_USER:-music_room}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-music_room}
+      POSTGRES_DB: ${DB_NAME:-music_room_dev}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - music_room_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-music_room}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  music_room_pgdata:

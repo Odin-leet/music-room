@@ -3,6 +3,7 @@ ENV_FILE := .env
 
 .PHONY: help env install scaffold-api scaffold-mobile \
         db-up db-down db-logs db-shell \
+        migrate migration-generate migration-revert \
         dev dev-api dev-mobile build test lint clean
 
 help:
@@ -25,6 +26,9 @@ help:
 	@echo "    make db-logs         Tail Postgres logs"
 	@echo "    make db-shell        Open a psql shell in the running container"
 	@echo "    make db-down         Stop and remove the Postgres container"
+	@echo "    make migrate         Apply every pending migration"
+	@echo "    make migration-generate name=AddPlaylist   Generate a migration from entity changes"
+	@echo "    make migration-revert                       Undo the last-applied migration"
 	@echo "    make clean           Remove node_modules, build output, Expo cache"
 
 env:
@@ -56,6 +60,19 @@ db-logs:
 
 db-shell:
 	docker compose exec postgres psql -U $${DB_USER:-music_room} -d $${DB_NAME:-music_room_dev}
+
+# --- schema (TypeORM migrations — the schema's source of truth, not `synchronize`) ---
+migrate:
+	cd apps/api && npm run typeorm -- migration:run -d src/data-source.ts
+
+# Diffs the entities against the current DB schema and writes a new
+# migration file under apps/api/src/migrations. Review the generated SQL
+# before running `make migrate` — it's a strong first draft, not gospel.
+migration-generate:
+	cd apps/api && npm run typeorm -- migration:generate -d src/data-source.ts src/migrations/$(name)
+
+migration-revert:
+	cd apps/api && npm run typeorm -- migration:revert -d src/data-source.ts
 
 # --- app processes ---
 dev-api:

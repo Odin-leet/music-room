@@ -31,8 +31,11 @@ music-room/
 
 The npm registry isn't reachable from this cloud session's sandbox, so the scaffolding commands below need to run locally, where you have normal internet access.
 
+Requires **Node 22+** (pinned in `.nvmrc` / `package.json#engines`) — `@nestjs/cli`'s current schematics chain ships an ESM-only dependency that Node 20 and earlier can't `require()`, and fails with `ERR_REQUIRE_ESM`. If you have `nvm`: `nvm install && nvm use` (reads `.nvmrc`) before anything else.
+
 ```bash
 git clone <your-repo-url> music-room && cd music-room
+nvm use                 # or: nvm install 22 && nvm use 22
 
 make env               # creates .env from .env.example — fill in real secrets after
 make scaffold-api      # generates apps/api with the NestJS CLI (one-time)
@@ -68,6 +71,60 @@ config/             # env validation (fails fast on a missing secret)
 - `apps/mobile` never hardcodes the API host — it reads `EXPO_PUBLIC_API_URL` (see `.env.example`), matching V.5's "backend address must be configurable" requirement, and exposes it again as an editable field in the app's own settings screen once that's built.
 - `packages/shared` is the compile-time link: a changed API shape becomes a red squiggly in the mobile app, not a bug found at runtime.
 - Real-time (Socket.IO) event names and payloads get documented by hand in `docs/` once they exist — generated REST docs won't cover that half.
+
+## Auth + Users — built so far
+
+`apps/api/src/auth` and `apps/api/src/users` are the first real modules: email/password registration with mandatory email verification (V.1), JWT access tokens (15 min) + rotating refresh tokens with reuse detection (V.6 — a replayed old refresh token revokes every session for that user, not just itself), password reset, and a `User` entity carrying the four visibility tiers (public/friends/private/musicPreferences).
+
+Merge these into your `apps/api` after `make scaffold-api` (they assume the Nest CLI's default file layout) and install the extra dependencies the CLI doesn't add by default:
+
+```bash
+npm install --workspace=apps/api \
+  @nestjs/config @nestjs/typeorm typeorm pg dotenv \
+  @nestjs/jwt @nestjs/passport passport passport-jwt \
+  bcryptjs class-validator class-transformer
+npm install --workspace=apps/api -D @types/passport-jwt ts-node
+```
+
+Then add these scripts to `apps/api/package.json` (the CLI's default `nest new` doesn't include them):
+
+```json
+"typeorm": "typeorm-ts-node-commonjs",
+"migration:generate": "typeorm-ts-node-commonjs migration:generate -d src/data-source.ts",
+"migration:run": "typeorm-ts-node-commonjs migration:run -d src/data-source.ts",
+"migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/data-source.ts"
+```
+
+Then create the tables for real:
+
+```bash
+make db-up      # Postgres must be running first
+make migrate     # applies src/migrations/…-InitialSchema.ts
+```
+
+`make db-shell` → `\dt` should now show `users` and `refresh_tokens`.
+
+Endpoints so far, all under `/auth` and `/users`:
+
+| Method & path | Auth required | Does |
+|---|---|---|
+| `POST /auth/register` | — | Create account, email+password, sends (logged, not yet mailed) a verification token |
+| `POST /auth/verify-email` | — | `{ token }` → marks the account verified |
+| `POST /auth/login` | — | `{ email, password }` → access + refresh token pair; rejects unverified accounts |
+| `POST /auth/refresh` | — | `{ refreshToken }` → rotates to a new pair |
+| `POST /auth/logout` | ✔ | Revokes the given refresh token |
+| `POST /auth/forgot-password` | — | `{ email }` → always the same response, doesn't leak whether the email exists |
+| `POST /auth/reset-password` | — | `{ token, newPassword }` → also revokes every existing session |
+| `GET /users/me` | ✔ | Full own profile |
+| `PATCH /users/me` | ✔ | Update profile fields (any of the three info tiers, musicPreferences, displayName) |
+| `GET /users/:id` | — | Public tier only — see open decision below |
+
+**Open decisions, flagged rather than silently assumed:**
+
+- **Friends-tier visibility isn't enforced yet.** `GET /users/:id` only ever returns `publicInfo` because there's no friend/follow relationship modelled yet to check against — building that model is the next real decision, likely alongside Track Vote's "invited users" concept, since both are a form of "who has access to X."
+- **Social login (Google/Facebook) isn't wired.** The DB columns (`googleId`, `facebookId`) exist; the OAuth flow doesn't yet. Needs a decision on whether the mobile app exchanges a native-SDK token with the API (recommended — no web redirect inside the app) before it's worth coding.
+- **No mailer yet.** Verification and password-reset tokens are logged to the API's console instead of emailed, so the flow is fully testable without one. Swap `sendVerificationEmail`/`sendPasswordResetEmail` in `auth.service.ts` for a real provider (Resend, SES, etc.) when ready — the token-generation and verification logic around them doesn't change.
+- **Schema changes go through migrations, not `synchronize`.** `synchronize` is off entirely. `src/migrations/…-InitialSchema.ts` is the first one, hand-written to match the `User`/`RefreshToken` entities exactly since there's nothing to diff against yet. Every migration after this one should be generated, not hand-written: change an entity, then `make migration-generate name=WhatChanged`, review the SQL it produces, then `make migrate` to apply it. This is what keeps your machine, your teammate's, and the grading machine's databases identical — nobody is trusting TypeORM to infer the same schema independently.
 
 ## Full specification
 

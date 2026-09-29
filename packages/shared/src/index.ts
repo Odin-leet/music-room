@@ -4,7 +4,18 @@
 // same types instead of redefining its own guess at what the API returns,
 // so a change to a shape is a compile error in the mobile app, not a
 // runtime surprise.
-//
-// Left empty on purpose — real shapes (User, Event, Track, Vote, Playlist…)
-// get defined here in the next step, alongside the API/DB structure.
-export {};
+
+export interface AuthTokens {
+  accessToken: string;
+  refreshToken: string;
+}
+
+export interface PublicUserProfile {
+  id: string;
+  displayName: string;
+  publicInfo: Record<string, unknown>;
+  musicPreferences: string[];
+}
+
+// Event/Track/Vote/Playlist shapes land here once the Track Vote and
+// Playlist Editor services are built.

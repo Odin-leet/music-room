@@ -1,15 +1,16 @@
 import type { HealthResponse } from '@music-room/shared';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useState } from 'react';
-import { Button, StyleSheet, Text, View } from 'react-native';
-import { API_URL } from './src/config';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { API_URL } from '@/config';
+import { Button, Card, Screen, Text, TextField } from '@/ui';
 
 type Health =
   | { state: 'loading' }
   | { state: 'ok'; data: HealthResponse }
   | { state: 'error'; message: string };
 
-// Temporary connectivity check (M1). Replaced by the real navigation in M2.
+// Temporary connectivity + UI-kit check (M1/M2). Replaced by expo-router in step 8.
 export default function App() {
   const [health, setHealth] = useState<Health>({ state: 'loading' });
 
@@ -32,30 +33,37 @@ export default function App() {
   }, [check]);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.url}>{API_URL}</Text>
-      {health.state === 'loading' && <Text>Checking API…</Text>}
-      {health.state === 'ok' && (
-        <Text style={styles.ok}>API: {health.data.status}</Text>
-      )}
-      {health.state === 'error' && (
-        <Text style={styles.error}>API unreachable: {health.message}</Text>
-      )}
-      <Button title="Check again" onPress={() => void check()} />
-      <StatusBar style="auto" />
-    </View>
+    <SafeAreaProvider>
+      <Screen centered>
+        <Text variant="title">Music Room</Text>
+
+        <Card>
+          <Text variant="muted">{API_URL}</Text>
+          {health.state === 'loading' && <Text>Checking API…</Text>}
+          {health.state === 'ok' && (
+            <Text variant="success">API: {health.data.status}</Text>
+          )}
+          {health.state === 'error' && (
+            <Text variant="error">API unreachable: {health.message}</Text>
+          )}
+        </Card>
+
+        <Button
+          title="Check again"
+          loading={health.state === 'loading'}
+          onPress={() => void check()}
+        />
+
+        {/* UI-kit preview: the error state forms will use for API 400/409s. */}
+        <TextField
+          label="Email (preview)"
+          value="not-an-email"
+          editable={false}
+          error="email must be an email"
+        />
+        <Button title="Secondary button" variant="secondary" onPress={() => {}} />
+      </Screen>
+      <StatusBar style="dark" />
+    </SafeAreaProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-  },
-  url: { color: '#666' },
-  ok: { fontSize: 24, color: 'green' },
-  error: { fontSize: 16, color: 'crimson', textAlign: 'center', padding: 16 },
-});

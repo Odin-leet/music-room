@@ -136,7 +136,7 @@ Not built yet, roughly in order:
 - **Users:** the four visibility tiers (public / friends / private / music preferences), `PATCH /users/me`, public profiles, and a friends model to enforce the friends tier.
 - **Track Vote (V.2.1):** events, tracks, votes, public/private events with invites, location/time-restricted voting, live ranking over WebSockets.
 - **Playlist Editor (V.2.3):** playlists, collaborators, concurrent editing with live sync.
-- **Mobile app:** `make scaffold-mobile`, then build against the API. The backend address must be configurable (V.5): the app reads `EXPO_PUBLIC_API_URL`.
+- **Mobile app:** build against the API. The backend address must be configurable (V.5): the app reads `EXPO_PUBLIC_API_URL` from `apps/mobile/.env` (copy `apps/mobile/.env.example`; Expo doesn't read the root `.env`).
 - **Shared types:** `packages/shared` currently has `AuthTokens` and `PublicUserProfile`; event, track, vote and playlist shapes will be added as the services are built.
 - **Housekeeping:** remove the unused `JWT_REFRESH_SECRET`; a periodic cleanup of expired `refresh_tokens` rows.
 

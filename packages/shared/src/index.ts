@@ -5,6 +5,11 @@
 // so a change to a shape is a compile error in the mobile app, not a
 // runtime surprise.
 
+// GET /health
+export interface HealthResponse {
+  status: 'ok';
+}
+
 export interface AuthTokens {
   accessToken: string;
   refreshToken: string;

@@ -1,6 +1,6 @@
 import type { CurrentUser } from '@music-room/shared';
-import { useEffect, useState } from 'react';
-import { api, ApiError } from '@/api/client';
+import { useCallback, useEffect, useState } from 'react';
+import { ApiError } from '@/api/client';
 import { useSession } from '@/session/SessionProvider';
 
 export type CurrentUserState =
@@ -8,38 +8,48 @@ export type CurrentUserState =
   | { state: 'ok'; user: CurrentUser }
   | { state: 'error'; message: string };
 
-// Loads GET /users/me for the signed-in user.
-export function useCurrentUser(): CurrentUserState {
-  const { accessToken, signOut } = useSession();
+// Loads GET /users/me for the signed-in user. An expired access token is
+// refreshed transparently by authedApi; if the session is truly over, the
+// SessionProvider signs out and the router leaves this screen.
+export function useCurrentUser() {
+  const { authedApi, signOut } = useSession();
   const [result, setResult] = useState<CurrentUserState>({ state: 'loading' });
 
+  const load = useCallback(
+    () =>
+      authedApi<CurrentUser>('/users/me').then(
+        (user): CurrentUserState => ({ state: 'ok', user }),
+        (err: unknown): CurrentUserState | null => {
+          // 404: the account was deleted after login.
+          if (err instanceof ApiError && err.status === 404) {
+            void signOut();
+            return null;
+          }
+          // 401 here means the refresh failed too: already signed out.
+          if (err instanceof ApiError && err.status === 401) return null;
+          return {
+            state: 'error',
+            message: err instanceof ApiError ? err.message : 'Something went wrong',
+          };
+        },
+      ),
+    [authedApi, signOut],
+  );
+
   useEffect(() => {
-    if (!accessToken) return;
     let cancelled = false;
-
-    api<CurrentUser>('/users/me', { token: accessToken })
-      .then((user) => {
-        if (!cancelled) setResult({ state: 'ok', user });
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return;
-        // 401: the access token expired (15 min) or the account is gone.
-        // For now, sign out cleanly; M4 will refresh automatically instead.
-        // 404: account deleted after login.
-        if (err instanceof ApiError && (err.status === 401 || err.status === 404)) {
-          void signOut();
-          return;
-        }
-        setResult({
-          state: 'error',
-          message: err instanceof ApiError ? err.message : 'Something went wrong',
-        });
-      });
-
+    void load().then((next) => {
+      if (!cancelled && next) setResult(next);
+    });
     return () => {
       cancelled = true;
     };
-  }, [accessToken, signOut]);
+  }, [load]);
 
-  return result;
+  const reload = useCallback(async () => {
+    const next = await load();
+    if (next) setResult(next);
+  }, [load]);
+
+  return { me: result, reload };
 }

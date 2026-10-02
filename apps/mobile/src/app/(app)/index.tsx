@@ -7,9 +7,16 @@ import { Button, Card, Screen, Text } from '@/ui';
 
 export default function HomeScreen() {
   const { signOut } = useSession();
-  const me = useCurrentUser();
+  const { me, reload } = useCurrentUser();
   const { health, check } = useHealth();
   const [signingOut, setSigningOut] = useState(false);
+  const [reloading, setReloading] = useState(false);
+
+  const runReload = async () => {
+    setReloading(true);
+    await reload();
+    setReloading(false);
+  };
 
   return (
     <Screen centered>
@@ -32,7 +39,13 @@ export default function HomeScreen() {
       </Card>
 
       <Button
-        title="Check again"
+        title="Reload profile"
+        variant="secondary"
+        loading={reloading}
+        onPress={() => void runReload()}
+      />
+      <Button
+        title="Check API again"
         variant="secondary"
         loading={health.state === 'loading'}
         onPress={() => void check()}

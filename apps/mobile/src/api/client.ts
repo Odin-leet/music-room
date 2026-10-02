@@ -17,14 +17,14 @@ export class ApiError extends Error {
   }
 }
 
-type Options = {
+export type ApiOptions = {
   method?: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
   body?: unknown;
   // Access token for routes behind JwtAuthGuard.
   token?: string | null;
 };
 
-export async function api<T>(path: string, { method = 'GET', body, token }: Options = {}): Promise<T> {
+export async function api<T>(path: string, { method = 'GET', body, token }: ApiOptions = {}): Promise<T> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
 

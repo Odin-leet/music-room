@@ -1,4 +1,5 @@
 import { API_URL } from '@/config';
+import { ClientChecks } from '@/dev/ClientChecks';
 import { useHealth } from '@/hooks/useHealth';
 import { useSession } from '@/session/SessionProvider';
 import { Button, Card, Screen, Text } from '@/ui';
@@ -28,6 +29,7 @@ export default function HomeScreen() {
         onPress={() => void check()}
       />
       <Button title="Fake log out (step 8)" variant="secondary" onPress={signOut} />
+      <ClientChecks />
     </Screen>
   );
 }

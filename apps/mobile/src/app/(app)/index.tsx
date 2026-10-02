@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { API_URL } from '@/config';
-import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useCurrentUser } from '@/session/CurrentUserProvider';
 import { useHealth } from '@/hooks/useHealth';
 import { useSession } from '@/session/SessionProvider';
 import { Button, Card, Screen, Text } from '@/ui';

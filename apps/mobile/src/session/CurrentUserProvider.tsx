@@ -1,19 +1,35 @@
 import type { CurrentUser } from '@music-room/shared';
-import { useCallback, useEffect, useState } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
 import { ApiError } from '@/api/client';
-import { useSession } from '@/session/SessionProvider';
+import { useSession } from './SessionProvider';
 
 export type CurrentUserState =
   | { state: 'loading' }
   | { state: 'ok'; user: CurrentUser }
   | { state: 'error'; message: string };
 
-// Loads GET /users/me for the signed-in user. An expired access token is
-// refreshed transparently by authedApi; if the session is truly over, the
-// SessionProvider signs out and the router leaves this screen.
-export function useCurrentUser() {
+type CurrentUserContextValue = {
+  me: CurrentUserState;
+  reload: () => Promise<void>;
+};
+
+const CurrentUserContext = createContext<CurrentUserContextValue | null>(null);
+
+// Loads GET /users/me once for the whole signed-in area, so every screen (and
+// the (app) layout, which needs emailVerified to pick a screen) shares it.
+// Expired access tokens are refreshed by authedApi; if the session is truly
+// over, SessionProvider signs out and the router leaves the (app) group.
+export function CurrentUserProvider({ children }: { children: ReactNode }) {
   const { authedApi, signOut } = useSession();
-  const [result, setResult] = useState<CurrentUserState>({ state: 'loading' });
+  const [me, setMe] = useState<CurrentUserState>({ state: 'loading' });
 
   const load = useCallback(
     () =>
@@ -39,7 +55,7 @@ export function useCurrentUser() {
   useEffect(() => {
     let cancelled = false;
     void load().then((next) => {
-      if (!cancelled && next) setResult(next);
+      if (!cancelled && next) setMe(next);
     });
     return () => {
       cancelled = true;
@@ -48,8 +64,15 @@ export function useCurrentUser() {
 
   const reload = useCallback(async () => {
     const next = await load();
-    if (next) setResult(next);
+    if (next) setMe(next);
   }, [load]);
 
-  return { me: result, reload };
+  const value = useMemo(() => ({ me, reload }), [me, reload]);
+  return <CurrentUserContext.Provider value={value}>{children}</CurrentUserContext.Provider>;
+}
+
+export function useCurrentUser() {
+  const value = useContext(CurrentUserContext);
+  if (!value) throw new Error('useCurrentUser must be used inside <CurrentUserProvider>');
+  return value;
 }

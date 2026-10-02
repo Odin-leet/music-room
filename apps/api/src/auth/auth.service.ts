@@ -2,7 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
-import { compare, hash, hashSync } from 'bcryptjs';
+import { compare, hashSync } from 'bcryptjs';
 import { createHash, randomBytes } from 'crypto';
 import { IsNull, Repository } from 'typeorm';
 import { parseDurationMs } from '../common/parse-duration';
@@ -11,9 +11,8 @@ import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { EmailVerificationService } from './email-verification.service';
+import { BCRYPT_ROUNDS, hashPassword } from './password';
 import { RefreshToken } from './refresh-token.entity';
-
-const BCRYPT_ROUNDS = 12;
 
 // Compared against when the email doesn't exist, so an unknown email takes as
 // long as a wrong password and response time doesn't reveal which is which.
@@ -41,7 +40,7 @@ export class AuthService {
   }
 
   async register(dto: RegisterDto) {
-    const passwordHash = await hash(dto.password, BCRYPT_ROUNDS);
+    const passwordHash = await hashPassword(dto.password);
     const user = await this.usersService.create({
       email: dto.email,
       displayName: dto.displayName,

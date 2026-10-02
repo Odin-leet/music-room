@@ -1,4 +1,4 @@
-import { Link } from 'expo-router';
+import { Link, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
 import type { TextInput } from 'react-native';
 import { noErrors, toFormErrors } from '@/api/formErrors';
@@ -7,7 +7,9 @@ import { Button, Screen, Text, TextField } from '@/ui';
 
 export default function LoginScreen() {
   const { signIn } = useSession();
-  const [email, setEmail] = useState('');
+  // Set when arriving from a successful password reset.
+  const params = useLocalSearchParams<{ email?: string; reset?: string }>();
+  const [email, setEmail] = useState(params.email ?? '');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState(noErrors);
@@ -32,6 +34,9 @@ export default function LoginScreen() {
   return (
     <Screen centered form>
       <Text variant="title">Log in</Text>
+      {params.reset === '1' ? (
+        <Text variant="success">Password changed. Log in with your new password.</Text>
+      ) : null}
 
       <TextField
         label="Email"
@@ -70,6 +75,9 @@ export default function LoginScreen() {
         onPress={() => void submit()}
       />
 
+      <Link href={{ pathname: '/forgot-password', params: { email: email.trim() } }}>
+        <Text variant="muted">Forgot password?</Text>
+      </Link>
       <Link href="/register">
         <Text variant="muted">No account yet? Register</Text>
       </Link>

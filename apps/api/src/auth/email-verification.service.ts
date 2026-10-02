@@ -7,22 +7,18 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { createHash, randomInt, timingSafeEqual } from 'crypto';
 import { DataSource, LessThan, MoreThan, Repository } from 'typeorm';
 import { MailService } from '../mail/mail.service';
 import { User } from '../users/user.entity';
 import { EmailVerificationCode } from './email-verification-code.entity';
-
-const CODE_TTL_MS = 15 * 60_000;
-const RESEND_COOLDOWN_MS = 60_000;
-const MAX_ATTEMPTS = 5;
-
-// Salted with the user id so the same code for two users hashes differently.
-// A 6-digit code is weak on its own; what protects it is the 15-minute
-// expiry and the 5-attempt limit, not the hash.
-function hashCode(userId: string, code: string) {
-  return createHash('sha256').update(`${userId}:${code}`).digest();
-}
+import {
+  CODE_TTL_MS,
+  codeMatches,
+  generateCode,
+  hashCode,
+  MAX_ATTEMPTS,
+  RESEND_COOLDOWN_MS,
+} from './one-time-code';
 
 @Injectable()
 export class EmailVerificationService {
@@ -88,8 +84,9 @@ export class EmailVerificationService {
       );
     }
 
-    const matches = timingSafeEqual(hashCode(userId, code), Buffer.from(row.codeHash, 'hex'));
-    if (!matches) throw new BadRequestException('Invalid code');
+    if (!codeMatches('verify-email', userId, code, row.codeHash)) {
+      throw new BadRequestException('Invalid code');
+    }
 
     // Mark verified and burn the code together.
     await this.dataSource.transaction(async (tx) => {
@@ -99,14 +96,14 @@ export class EmailVerificationService {
   }
 
   private async issueAndSend(user: User) {
-    const code = randomInt(0, 1_000_000).toString().padStart(6, '0');
+    const code = generateCode();
 
     // One code per user: replace whatever was there (fresh attempts, fresh expiry).
     await this.dataSource.transaction(async (tx) => {
       await tx.delete(EmailVerificationCode, { userId: user.id });
       await tx.insert(EmailVerificationCode, {
         userId: user.id,
-        codeHash: hashCode(user.id, code).toString('hex'),
+        codeHash: hashCode('verify-email', user.id, code),
         expiresAt: new Date(Date.now() + CODE_TTL_MS),
       });
     });

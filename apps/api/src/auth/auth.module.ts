@@ -11,13 +11,15 @@ import { AuthService } from './auth.service';
 import { EmailVerificationCode } from './email-verification-code.entity';
 import { EmailVerificationService } from './email-verification.service';
 import { JwtStrategy } from './jwt.strategy';
+import { PasswordResetCode } from './password-reset-code.entity';
+import { PasswordResetService } from './password-reset.service';
 import { RefreshToken } from './refresh-token.entity';
 
 @Module({
   imports: [
     ConfigModule,
     PassportModule,
-    TypeOrmModule.forFeature([RefreshToken, EmailVerificationCode, User]),
+    TypeOrmModule.forFeature([RefreshToken, EmailVerificationCode, PasswordResetCode, User]),
     MailModule,
     UsersModule,
     JwtModule.registerAsync({
@@ -34,6 +36,6 @@ import { RefreshToken } from './refresh-token.entity';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, EmailVerificationService, JwtStrategy],
+  providers: [AuthService, EmailVerificationService, PasswordResetService, JwtStrategy],
 })
 export class AuthModule {}

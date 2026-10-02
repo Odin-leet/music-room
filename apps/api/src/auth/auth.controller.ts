@@ -1,19 +1,23 @@
 import { Body, Controller, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { AuthService } from './auth.service';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
 import { RegisterDto } from './dto/register.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { EmailVerificationService } from './email-verification.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import type { AuthUser } from './jwt.strategy';
+import { PasswordResetService } from './password-reset.service';
 
 @Controller('auth')
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly emailVerification: EmailVerificationService,
+    private readonly passwordReset: PasswordResetService,
   ) {}
 
   @Post('register')
@@ -53,5 +57,19 @@ export class AuthController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async resendVerification(@CurrentUser() user: AuthUser) {
     await this.emailVerification.resend(user.userId);
+  }
+
+  // Always 204, whether or not the email has an account (no account discovery).
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  forgotPassword(@Body() body: ForgotPasswordDto) {
+    this.passwordReset.requestReset(body.email);
+  }
+
+  // Sets the new password and ends every existing session.
+  @Post('reset-password')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async resetPassword(@Body() body: ResetPasswordDto) {
+    await this.passwordReset.reset(body.email, body.code, body.newPassword);
   }
 }

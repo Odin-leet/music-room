@@ -3,9 +3,13 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule, JwtSignOptions } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { MailModule } from '../mail/mail.module';
+import { User } from '../users/user.entity';
 import { UsersModule } from '../users/users.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { EmailVerificationCode } from './email-verification-code.entity';
+import { EmailVerificationService } from './email-verification.service';
 import { JwtStrategy } from './jwt.strategy';
 import { RefreshToken } from './refresh-token.entity';
 
@@ -13,7 +17,8 @@ import { RefreshToken } from './refresh-token.entity';
   imports: [
     ConfigModule,
     PassportModule,
-    TypeOrmModule.forFeature([RefreshToken]),
+    TypeOrmModule.forFeature([RefreshToken, EmailVerificationCode, User]),
+    MailModule,
     UsersModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -29,6 +34,6 @@ import { RefreshToken } from './refresh-token.entity';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
+  providers: [AuthService, EmailVerificationService, JwtStrategy],
 })
 export class AuthModule {}

@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './users/user.entity';
 import { AuthModule } from './auth/auth.module';
+import { EmailVerificationCode } from './auth/email-verification-code.entity';
 import { RefreshToken } from './auth/refresh-token.entity';
 import { HealthController } from './health/health.controller';
 import { UsersModule } from './users/users.module';
@@ -19,7 +20,7 @@ import { UsersModule } from './users/users.module';
       username: process.env.DB_USER,
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME,
-      entities: [User, RefreshToken],
+      entities: [User, RefreshToken, EmailVerificationCode],
       synchronize: false,
     }),
     UsersModule,

@@ -20,6 +20,8 @@ export interface CurrentUser {
   id: string;
   email: string;
   displayName: string;
+  // False until the user enters the code emailed at registration.
+  emailVerified: boolean;
 }
 
 export interface PublicUserProfile {

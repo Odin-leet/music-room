@@ -1,6 +1,7 @@
 import { config } from 'dotenv';
 import { resolve } from 'path';
 import { DataSource } from 'typeorm';
+import { EmailVerificationCode } from './auth/email-verification-code.entity';
 import { RefreshToken } from './auth/refresh-token.entity';
 import { User } from './users/user.entity';
 
@@ -13,6 +14,6 @@ export default new DataSource({
   username: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
-  entities: [User, RefreshToken],
+  entities: [User, RefreshToken, EmailVerificationCode],
   migrations: ['src/migrations/*.ts'],
 });

@@ -10,6 +10,7 @@ import { User } from '../users/user.entity';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { EmailVerificationService } from './email-verification.service';
 import { RefreshToken } from './refresh-token.entity';
 
 const BCRYPT_ROUNDS = 12;
@@ -29,6 +30,7 @@ export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
+    private readonly emailVerification: EmailVerificationService,
     @InjectRepository(RefreshToken)
     private readonly refreshTokens: Repository<RefreshToken>,
     config: ConfigService,
@@ -40,11 +42,13 @@ export class AuthService {
 
   async register(dto: RegisterDto) {
     const passwordHash = await hash(dto.password, BCRYPT_ROUNDS);
-    return this.usersService.create({
+    const user = await this.usersService.create({
       email: dto.email,
       displayName: dto.displayName,
       passwordHash,
     });
+    await this.emailVerification.sendInitialCode(user);
+    return user;
   }
 
   async login(dto: LoginDto) {

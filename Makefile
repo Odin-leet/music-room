@@ -14,7 +14,7 @@ help:
 	@echo "    make scaffold-api    Generate apps/api with the NestJS CLI (once)"
 	@echo "    make scaffold-mobile Generate apps/mobile with Expo (once)"
 	@echo "    make install         Install all workspace dependencies"
-	@echo "    make db-up           Start Postgres via Docker Compose"
+	@echo "    make db-up           Start Postgres + Mailpit (dev mail) via Docker Compose"
 	@echo ""
 	@echo "  Day to day:"
 	@echo "    make dev-api         Run the NestJS API in watch mode"
@@ -25,7 +25,7 @@ help:
 	@echo "    make lint            Lint every workspace"
 	@echo "    make db-logs         Tail Postgres logs"
 	@echo "    make db-shell        Open a psql shell in the running container"
-	@echo "    make db-down         Stop and remove the Postgres container"
+	@echo "    make db-down         Stop and remove the Postgres + Mailpit containers"
 	@echo "    make migrate         Apply every pending migration"
 	@echo "    make migration-generate name=AddPlaylist   Generate a migration from entity changes"
 	@echo "    make migration-revert                       Undo the last-applied migration"
@@ -49,8 +49,9 @@ install: env
 
 # --- database ---
 db-up:
-	docker compose up -d postgres
+	docker compose up -d postgres mailpit
 	@echo "Postgres starting — run 'make db-logs' to watch it become healthy."
+	@echo "Mailpit (dev email inbox): http://localhost:8025"
 
 db-down:
 	docker compose down

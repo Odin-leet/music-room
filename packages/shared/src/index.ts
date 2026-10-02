@@ -15,6 +15,13 @@ export interface AuthTokens {
   refreshToken: string;
 }
 
+// GET /users/me — the logged-in user's own account (never includes passwordHash).
+export interface CurrentUser {
+  id: string;
+  email: string;
+  displayName: string;
+}
+
 export interface PublicUserProfile {
   id: string;
   displayName: string;

@@ -1,18 +1,26 @@
 import { useState } from 'react';
 import { API_URL } from '@/config';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useHealth } from '@/hooks/useHealth';
 import { useSession } from '@/session/SessionProvider';
 import { Button, Card, Screen, Text } from '@/ui';
 
-// Home. Step 9d replaces the token line with your profile from GET /users/me.
 export default function HomeScreen() {
-  const { accessToken, signOut } = useSession();
+  const { signOut } = useSession();
+  const me = useCurrentUser();
   const { health, check } = useHealth();
   const [signingOut, setSigningOut] = useState(false);
 
   return (
     <Screen centered>
-      <Text variant="title">Music Room</Text>
+      {me.state === 'loading' && <Text variant="muted">Loading your profile…</Text>}
+      {me.state === 'ok' && (
+        <>
+          <Text variant="title">Hi, {me.user.displayName}</Text>
+          <Text variant="muted">{me.user.email}</Text>
+        </>
+      )}
+      {me.state === 'error' && <Text variant="error">{me.message}</Text>}
 
       <Card>
         <Text variant="muted">{API_URL}</Text>
@@ -21,13 +29,11 @@ export default function HomeScreen() {
         {health.state === 'error' && (
           <Text variant="error">API unreachable: {health.message}</Text>
         )}
-        <Text variant="muted">
-          Access token (in memory): {accessToken ? `${accessToken.slice(0, 16)}…` : 'none'}
-        </Text>
       </Card>
 
       <Button
         title="Check again"
+        variant="secondary"
         loading={health.state === 'loading'}
         onPress={() => void check()}
       />

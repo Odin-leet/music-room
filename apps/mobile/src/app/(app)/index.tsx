@@ -1,14 +1,14 @@
+import { useState } from 'react';
 import { API_URL } from '@/config';
-import { ClientChecks } from '@/dev/ClientChecks';
 import { useHealth } from '@/hooks/useHealth';
 import { useSession } from '@/session/SessionProvider';
 import { Button, Card, Screen, Text } from '@/ui';
 
-// Home. For now: the API health check and a fake log out; real profile data
-// from GET /users/me arrives in step 9.
+// Home. Step 9d replaces the token line with your profile from GET /users/me.
 export default function HomeScreen() {
-  const { signOut } = useSession();
+  const { accessToken, signOut } = useSession();
   const { health, check } = useHealth();
+  const [signingOut, setSigningOut] = useState(false);
 
   return (
     <Screen centered>
@@ -21,6 +21,9 @@ export default function HomeScreen() {
         {health.state === 'error' && (
           <Text variant="error">API unreachable: {health.message}</Text>
         )}
+        <Text variant="muted">
+          Access token (in memory): {accessToken ? `${accessToken.slice(0, 16)}…` : 'none'}
+        </Text>
       </Card>
 
       <Button
@@ -28,8 +31,15 @@ export default function HomeScreen() {
         loading={health.state === 'loading'}
         onPress={() => void check()}
       />
-      <Button title="Fake log out (step 8)" variant="secondary" onPress={signOut} />
-      <ClientChecks />
+      <Button
+        title="Log out"
+        variant="secondary"
+        loading={signingOut}
+        onPress={() => {
+          setSigningOut(true);
+          void signOut();
+        }}
+      />
     </Screen>
   );
 }

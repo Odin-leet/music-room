@@ -1,3 +1,4 @@
+import type { Ref } from 'react';
 import { StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
 import { colors, font, radius, spacing } from '@/theme';
 import { Text } from './Text';
@@ -8,13 +9,16 @@ type Props = Omit<TextInputProps, 'style' | 'secureTextEntry'> & {
   error?: string;
   // Hides the input (passwords).
   secure?: boolean;
+  // Lets a form move focus to this field (keyboard "Next"). React 19: ref is a plain prop.
+  ref?: Ref<TextInput>;
 };
 
-export function TextField({ label, error, secure = false, ...inputProps }: Props) {
+export function TextField({ label, error, secure = false, ref, ...inputProps }: Props) {
   return (
     <View style={styles.wrapper}>
       <Text style={styles.label}>{label}</Text>
       <TextInput
+        ref={ref}
         accessibilityLabel={label}
         placeholderTextColor={colors.textMuted}
         secureTextEntry={secure}

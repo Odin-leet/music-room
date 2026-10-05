@@ -13,6 +13,8 @@ import { EmailVerificationService } from './email-verification.service';
 import { GoogleOAuthController } from './google-oauth.controller';
 import { GoogleOAuthService } from './google-oauth.service';
 import { JwtStrategy } from './jwt.strategy';
+import { OAuthLoginCode } from './oauth-login-code.entity';
+import { OAuthLoginService } from './oauth-login.service';
 import { PasswordResetCode } from './password-reset-code.entity';
 import { PasswordResetService } from './password-reset.service';
 import { RefreshToken } from './refresh-token.entity';
@@ -21,7 +23,13 @@ import { RefreshToken } from './refresh-token.entity';
   imports: [
     ConfigModule,
     PassportModule,
-    TypeOrmModule.forFeature([RefreshToken, EmailVerificationCode, PasswordResetCode, User]),
+    TypeOrmModule.forFeature([
+      RefreshToken,
+      EmailVerificationCode,
+      PasswordResetCode,
+      OAuthLoginCode,
+      User,
+    ]),
     MailModule,
     UsersModule,
     JwtModule.registerAsync({
@@ -43,6 +51,7 @@ import { RefreshToken } from './refresh-token.entity';
     EmailVerificationService,
     PasswordResetService,
     GoogleOAuthService,
+    OAuthLoginService,
     JwtStrategy,
   ],
 })

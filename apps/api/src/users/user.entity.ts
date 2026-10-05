@@ -11,12 +11,21 @@ export class User {
   @Column({ unique: true })
   email: string;
 
+  // Null for accounts created through Google: they have no password until
+  // they set one with "forgot password". Explicit type: TypeORM can't infer
+  // a column type from a `string | null` union.
   @Exclude()
-  @Column()
-  passwordHash: string;
+  @Column({ type: 'varchar', nullable: true })
+  passwordHash: string | null;
 
   @Column()
   displayName: string;
+
+  // Google's permanent account id (the ID token's `sub`), set when the user
+  // signs in with Google. Never changes, even if their Gmail address does.
+  @Exclude()
+  @Column({ type: 'varchar', nullable: true, unique: true })
+  googleId: string | null;
 
   // Null until the user enters the code we emailed them.
   @Exclude()

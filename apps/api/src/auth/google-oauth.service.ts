@@ -10,6 +10,11 @@ const ALLOWED_APP_REDIRECTS = [/^exp:\/\//, /^musicroom:\/\//];
 
 const STATE_PURPOSE = 'google-oauth-state';
 
+// PKCE S256 challenge = base64url(SHA-256(verifier)) = always 43 characters.
+const PKCE_CHALLENGE = /^[A-Za-z0-9_-]{43}$/;
+
+export type OAuthState = { redirect: string; codeChallenge: string };
+
 export type GoogleProfile = {
   googleId: string;
   email: string;
@@ -47,12 +52,19 @@ export class GoogleOAuthService {
     return redirect;
   }
 
+  assertValidChallenge(codeChallenge: string | undefined): string {
+    if (!codeChallenge || !PKCE_CHALLENGE.test(codeChallenge)) {
+      throw new BadRequestException('code_challenge must be a PKCE S256 challenge');
+    }
+    return codeChallenge;
+  }
+
   // The Google sign-in page URL. `state` round-trips through Google and comes
   // back to the callback: it's signed and short-lived, so the callback can
   // trust where to send the user and can't be fed a forged request.
-  buildAuthUrl(appRedirect: string) {
+  buildAuthUrl({ redirect, codeChallenge }: OAuthState) {
     const state = this.jwtService.sign(
-      { purpose: STATE_PURPOSE, redirect: appRedirect },
+      { purpose: STATE_PURPOSE, redirect, codeChallenge },
       { expiresIn: '10m' },
     );
     return this.client.generateAuthUrl({
@@ -63,12 +75,15 @@ export class GoogleOAuthService {
     });
   }
 
-  // Returns the app redirect stored in state, or throws if state is forged/expired.
-  readState(state: string | undefined): string {
+  // Returns what /start put in state, or throws if state is forged/expired.
+  readState(state: string | undefined): OAuthState {
     try {
-      const payload = this.jwtService.verify<{ purpose: string; redirect: string }>(state ?? '');
+      const payload = this.jwtService.verify<OAuthState & { purpose: string }>(state ?? '');
       if (payload.purpose !== STATE_PURPOSE) throw new Error('wrong purpose');
-      return this.assertAllowedAppRedirect(payload.redirect);
+      return {
+        redirect: this.assertAllowedAppRedirect(payload.redirect),
+        codeChallenge: this.assertValidChallenge(payload.codeChallenge),
+      };
     } catch {
       throw new BadRequestException('Invalid or expired sign-in attempt');
     }

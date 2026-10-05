@@ -3,6 +3,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { AuthService } from './auth.service';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
+import { OAuthExchangeDto } from './dto/oauth-exchange.dto';
 import { RefreshDto } from './dto/refresh.dto';
 import { RegisterDto } from './dto/register.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
@@ -10,6 +11,7 @@ import { VerifyEmailDto } from './dto/verify-email.dto';
 import { EmailVerificationService } from './email-verification.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import type { AuthUser } from './jwt.strategy';
+import { OAuthLoginService } from './oauth-login.service';
 import { PasswordResetService } from './password-reset.service';
 
 @Controller('auth')
@@ -18,6 +20,7 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly emailVerification: EmailVerificationService,
     private readonly passwordReset: PasswordResetService,
+    private readonly oauthLogin: OAuthLoginService,
   ) {}
 
   @Post('register')
@@ -71,5 +74,14 @@ export class AuthController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async resetPassword(@Body() body: ResetPasswordDto) {
     await this.passwordReset.reset(body.email, body.code, body.newPassword);
+  }
+
+  // End of a social login: the app trades the single-use code from the
+  // return link (+ its PKCE verifier) for our usual token pair.
+  @Post('oauth/exchange')
+  @HttpCode(HttpStatus.OK)
+  async oauthExchange(@Body() body: OAuthExchangeDto) {
+    const user = await this.oauthLogin.exchange(body.code, body.codeVerifier);
+    return this.authService.issueTokens(user);
   }
 }

@@ -58,7 +58,10 @@ export class AuthService {
       dto.password,
       user?.passwordHash ?? DUMMY_PASSWORD_HASH,
     );
-    if (!user || !passwordOk) {
+    // `!user.passwordHash`: a Google-only account has no password. It still
+    // went through compare() above (against the dummy hash) so the timing
+    // matches, but it must never pass — not even with the dummy's password.
+    if (!user || !user.passwordHash || !passwordOk) {
       throw new UnauthorizedException('Invalid email or password');
     }
     return this.issueTokens(user);
@@ -114,7 +117,8 @@ export class AuthService {
     );
   }
 
-  private async issueTokens(user: User) {
+  // Also used by social login once the user is identified.
+  async issueTokens(user: User) {
     const accessToken = await this.jwtService.signAsync({
       sub: user.id,
       email: user.email,

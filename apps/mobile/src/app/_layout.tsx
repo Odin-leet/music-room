@@ -38,6 +38,8 @@ function RootNavigator() {
       <Stack.Protected guard={!signedIn}>
         <Stack.Screen name="(auth)" />
       </Stack.Protected>
+      {/* Social-login return link: reachable in both states, closes itself. */}
+      <Stack.Screen name="oauth" options={{ animation: 'none' }} />
     </Stack>
   );
 }

@@ -2,6 +2,7 @@ import { Link, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
 import type { TextInput } from 'react-native';
 import { noErrors, toFormErrors } from '@/api/formErrors';
+import { GoogleRoundTrip } from '@/dev/GoogleRoundTrip';
 import { useSession } from '@/session/SessionProvider';
 import { Button, Screen, Text, TextField } from '@/ui';
 
@@ -78,6 +79,7 @@ export default function LoginScreen() {
       <Link href={{ pathname: '/forgot-password', params: { email: email.trim() } }}>
         <Text variant="muted">Forgot password?</Text>
       </Link>
+      <GoogleRoundTrip />
       <Link href="/register">
         <Text variant="muted">No account yet? Register</Text>
       </Link>

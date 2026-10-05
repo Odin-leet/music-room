@@ -10,6 +10,8 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { EmailVerificationCode } from './email-verification-code.entity';
 import { EmailVerificationService } from './email-verification.service';
+import { GoogleOAuthController } from './google-oauth.controller';
+import { GoogleOAuthService } from './google-oauth.service';
 import { JwtStrategy } from './jwt.strategy';
 import { PasswordResetCode } from './password-reset-code.entity';
 import { PasswordResetService } from './password-reset.service';
@@ -35,7 +37,13 @@ import { RefreshToken } from './refresh-token.entity';
       }),
     }),
   ],
-  controllers: [AuthController],
-  providers: [AuthService, EmailVerificationService, PasswordResetService, JwtStrategy],
+  controllers: [AuthController, GoogleOAuthController],
+  providers: [
+    AuthService,
+    EmailVerificationService,
+    PasswordResetService,
+    GoogleOAuthService,
+    JwtStrategy,
+  ],
 })
 export class AuthModule {}

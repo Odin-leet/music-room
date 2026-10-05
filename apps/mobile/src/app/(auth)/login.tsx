@@ -2,9 +2,9 @@ import { Link, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
 import type { TextInput } from 'react-native';
 import { noErrors, toFormErrors } from '@/api/formErrors';
-import { GoogleRoundTrip } from '@/dev/GoogleRoundTrip';
+import { GoogleSignInButton } from '@/components/GoogleSignInButton';
 import { useSession } from '@/session/SessionProvider';
-import { Button, Screen, Text, TextField } from '@/ui';
+import { Button, OrDivider, Screen, Text, TextField } from '@/ui';
 
 export default function LoginScreen() {
   const { signIn } = useSession();
@@ -75,11 +75,12 @@ export default function LoginScreen() {
         disabled={!canSubmit}
         onPress={() => void submit()}
       />
+      <OrDivider />
+      <GoogleSignInButton />
 
       <Link href={{ pathname: '/forgot-password', params: { email: email.trim() } }}>
         <Text variant="muted">Forgot password?</Text>
       </Link>
-      <GoogleRoundTrip />
       <Link href="/register">
         <Text variant="muted">No account yet? Register</Text>
       </Link>

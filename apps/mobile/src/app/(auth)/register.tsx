@@ -2,8 +2,9 @@ import { Link } from 'expo-router';
 import { useRef, useState } from 'react';
 import type { TextInput } from 'react-native';
 import { noErrors, toFormErrors } from '@/api/formErrors';
+import { GoogleSignInButton } from '@/components/GoogleSignInButton';
 import { useSession } from '@/session/SessionProvider';
-import { Button, Screen, Text, TextField } from '@/ui';
+import { Button, OrDivider, Screen, Text, TextField } from '@/ui';
 
 export default function RegisterScreen() {
   const { register } = useSession();
@@ -87,6 +88,8 @@ export default function RegisterScreen() {
         disabled={!canSubmit}
         onPress={() => void submit()}
       />
+      <OrDivider />
+      <GoogleSignInButton />
 
       <Link href="/login">
         <Text variant="muted">Already have an account? Log in</Text>

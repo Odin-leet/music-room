@@ -1245,6 +1245,565 @@
           "Queue (Track Vote)"
         ]
       }
+    },
+    "/playlists": {
+      "post": {
+        "operationId": "PlaylistsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePlaylistDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaylistViewDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a playlist (you become its owner; an invite code is generated)",
+        "tags": [
+          "Playlists (Playlist Editor)"
+        ]
+      },
+      "get": {
+        "operationId": "PlaylistsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PlaylistViewDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Public playlists + the playlists you are a member of, most recently edited first",
+        "tags": [
+          "Playlists (Playlist Editor)"
+        ]
+      }
+    },
+    "/playlists/join": {
+      "post": {
+        "operationId": "PlaylistsController_joinByCode",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JoinByCodeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaylistViewDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token"
+          },
+          "404": {
+            "description": "No playlist with this code"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Join any playlist with its 8-character invite code (as guest)",
+        "tags": [
+          "Playlists (Playlist Editor)"
+        ]
+      }
+    },
+    "/playlists/{id}": {
+      "get": {
+        "operationId": "PlaylistsController_view",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaylistViewDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token"
+          },
+          "404": {
+            "description": "Playlist not found — also answered for private playlists you are not in"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Playlist details, your role, and whether you can edit",
+        "tags": [
+          "Playlists (Playlist Editor)"
+        ]
+      },
+      "patch": {
+        "operationId": "PlaylistsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePlaylistDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaylistViewDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token"
+          },
+          "403": {
+            "description": "Only the playlist owner can do this"
+          },
+          "404": {
+            "description": "Playlist not found — also answered for private playlists you are not in"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Edit name / description / visibility / license (owner)",
+        "tags": [
+          "Playlists (Playlist Editor)"
+        ]
+      },
+      "delete": {
+        "operationId": "PlaylistsController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token"
+          },
+          "403": {
+            "description": "Only the playlist owner can do this"
+          },
+          "404": {
+            "description": "Playlist not found — also answered for private playlists you are not in"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a playlist and its tracks (owner)",
+        "tags": [
+          "Playlists (Playlist Editor)"
+        ]
+      }
+    },
+    "/playlists/{id}/join": {
+      "post": {
+        "operationId": "PlaylistsController_joinPublic",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaylistViewDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token"
+          },
+          "404": {
+            "description": "Playlist not found — also answered for private playlists you are not in"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Join a public playlist as guest",
+        "tags": [
+          "Playlists (Playlist Editor)"
+        ]
+      }
+    },
+    "/playlists/{id}/invites": {
+      "post": {
+        "operationId": "PlaylistsController_invite",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InviteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InviteResultDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token"
+          },
+          "403": {
+            "description": "Only the playlist owner can do this"
+          },
+          "404": {
+            "description": "Playlist not found, or no account with this email"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Invite a registered account by email (owner); invited accounts can edit under license invited",
+        "tags": [
+          "Playlists (Playlist Editor)"
+        ]
+      }
+    },
+    "/playlists/{id}/tracks": {
+      "get": {
+        "operationId": "PlaylistTracksController_list",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaylistTracksDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token"
+          },
+          "404": {
+            "description": "Playlist not found — also answered for private playlists you are not in"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "A playlist's tracks, in order",
+        "tags": [
+          "Playlists (Playlist Editor)"
+        ]
+      },
+      "post": {
+        "operationId": "PlaylistTracksController_add",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddPlaylistTrackDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaylistTrackDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token"
+          },
+          "403": {
+            "description": "License \"invited\" and you are not invited (reason: not_invited)"
+          },
+          "404": {
+            "description": "Playlist not found — also answered for private playlists you are not in; or no such Deezer track"
+          },
+          "409": {
+            "description": "Song already in the playlist, or afterId is no longer in it"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Add a song (at the end, at the top with afterId: null, or right after afterId)",
+        "tags": [
+          "Playlists (Playlist Editor)"
+        ]
+      }
+    },
+    "/playlists/{id}/tracks/{trackId}": {
+      "patch": {
+        "operationId": "PlaylistTracksController_move",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "trackId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MovePlaylistTrackDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaylistTrackDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed, or afterId is the track itself"
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token"
+          },
+          "403": {
+            "description": "License \"invited\" and you are not invited (reason: not_invited)"
+          },
+          "404": {
+            "description": "Playlist not found — also answered for private playlists you are not in; or the track is not in it"
+          },
+          "409": {
+            "description": "afterId is no longer in the playlist (reload and retry)"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Move a track right after afterId (null = to the top)",
+        "tags": [
+          "Playlists (Playlist Editor)"
+        ]
+      },
+      "delete": {
+        "operationId": "PlaylistTracksController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "trackId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Removed (or already gone)"
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token"
+          },
+          "403": {
+            "description": "License \"invited\" and you are not invited (reason: not_invited)"
+          },
+          "404": {
+            "description": "Playlist not found — also answered for private playlists you are not in"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove a track (idempotent)",
+        "tags": [
+          "Playlists (Playlist Editor)"
+        ]
+      }
     }
   },
   "info": {
@@ -2070,6 +2629,295 @@
           "nowPlaying",
           "upcoming",
           "eventId"
+        ]
+      },
+      "CreatePlaylistDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Road trip",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "visibility": {
+            "type": "string",
+            "enum": [
+              "public",
+              "private"
+            ]
+          },
+          "license": {
+            "type": "string",
+            "description": "Who may edit. Default: open.",
+            "enum": [
+              "open",
+              "invited"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "visibility"
+        ]
+      },
+      "EditPermissionDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "description": "Present when `allowed` is false.",
+            "enum": [
+              "not_member",
+              "not_invited"
+            ],
+            "type": "string"
+          },
+          "allowed": {
+            "type": "boolean",
+            "description": "Whether you can add, remove and reorder tracks."
+          }
+        },
+        "required": [
+          "allowed"
+        ]
+      },
+      "PlaylistViewDto": {
+        "type": "object",
+        "properties": {
+          "visibility": {
+            "enum": [
+              "public",
+              "private"
+            ],
+            "type": "string"
+          },
+          "license": {
+            "description": "open = anyone who can see it edits · invited = owner + invited accounts only",
+            "enum": [
+              "open",
+              "invited"
+            ],
+            "type": "string"
+          },
+          "owner": {
+            "$ref": "#/components/schemas/UserRefDto"
+          },
+          "myRole": {
+            "nullable": true,
+            "description": "Your membership; null = not a member (only possible for public playlists).",
+            "enum": [
+              "owner",
+              "invited",
+              "guest"
+            ],
+            "type": "string"
+          },
+          "inviteCode": {
+            "type": "string",
+            "nullable": true,
+            "description": "8 characters; only shown to members."
+          },
+          "canEdit": {
+            "$ref": "#/components/schemas/EditPermissionDto"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "example": "Road trip"
+          },
+          "description": {
+            "type": "string"
+          },
+          "trackCount": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "visibility",
+          "license",
+          "owner",
+          "myRole",
+          "inviteCode",
+          "canEdit",
+          "createdAt",
+          "updatedAt",
+          "id",
+          "name",
+          "description",
+          "trackCount"
+        ]
+      },
+      "UpdatePlaylistDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "visibility": {
+            "type": "string",
+            "enum": [
+              "public",
+              "private"
+            ]
+          },
+          "license": {
+            "type": "string",
+            "enum": [
+              "open",
+              "invited"
+            ]
+          }
+        }
+      },
+      "PlaylistTrackDto": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "enum": [
+              "deezer"
+            ],
+            "type": "string"
+          },
+          "coverUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "isrc": {
+            "type": "string",
+            "nullable": true,
+            "description": "International Standard Recording Code (same recording across providers).",
+            "example": "GBDUW0000053"
+          },
+          "addedBy": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UserRefDto"
+              }
+            ]
+          },
+          "addedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "id": {
+            "type": "string",
+            "description": "The playlist entry's id: use it to move or remove."
+          },
+          "position": {
+            "type": "string",
+            "description": "Fractional position key. Sort with plain code-unit comparison (not localeCompare).",
+            "example": "a0V"
+          },
+          "providerTrackId": {
+            "type": "string",
+            "description": "The provider's track id (Deezer: digits).",
+            "example": "3135553"
+          },
+          "title": {
+            "type": "string",
+            "example": "One More Time"
+          },
+          "artist": {
+            "type": "string",
+            "example": "Daft Punk"
+          },
+          "album": {
+            "type": "string",
+            "example": "Discovery"
+          },
+          "durationSec": {
+            "type": "number",
+            "example": 320
+          }
+        },
+        "required": [
+          "provider",
+          "coverUrl",
+          "isrc",
+          "addedBy",
+          "addedAt",
+          "id",
+          "position",
+          "providerTrackId",
+          "title",
+          "artist",
+          "album",
+          "durationSec"
+        ]
+      },
+      "PlaylistTracksDto": {
+        "type": "object",
+        "properties": {
+          "tracks": {
+            "description": "Already in order.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlaylistTrackDto"
+            }
+          },
+          "playlistId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "tracks",
+          "playlistId"
+        ]
+      },
+      "AddPlaylistTrackDto": {
+        "type": "object",
+        "properties": {
+          "afterId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Put it right after this playlist entry. Omit = at the end; null = at the top.",
+            "format": "uuid"
+          },
+          "providerTrackId": {
+            "type": "string",
+            "description": "Deezer track id. The server fetches the details itself.",
+            "example": "3135553",
+            "pattern": "^\\d{1,20}$"
+          }
+        },
+        "required": [
+          "providerTrackId"
+        ]
+      },
+      "MovePlaylistTrackDto": {
+        "type": "object",
+        "properties": {
+          "afterId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Put the track right after this playlist entry; null = at the top.",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "afterId"
         ]
       }
     }

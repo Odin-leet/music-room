@@ -2,6 +2,8 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+import { StyleSheet } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SessionProvider, useSession } from '@/session/SessionProvider';
 
 // Keep the native splash up until we know whether a saved session restores,
@@ -10,10 +12,13 @@ void SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   return (
-    <SessionProvider>
-      <RootNavigator />
-      <StatusBar style="dark" />
-    </SessionProvider>
+    // Gestures (drag to reorder a playlist) need this root around the whole app.
+    <GestureHandlerRootView style={styles.root}>
+      <SessionProvider>
+        <RootNavigator />
+        <StatusBar style="dark" />
+      </SessionProvider>
+    </GestureHandlerRootView>
   );
 }
 
@@ -43,3 +48,5 @@ function RootNavigator() {
     </Stack>
   );
 }
+
+const styles = StyleSheet.create({ root: { flex: 1 } });

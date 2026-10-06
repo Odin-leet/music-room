@@ -11,7 +11,7 @@ Mobile, collaborative, real-time music app. People gather around an event's live
 | **V.2.1 Music Track Vote** — events, visibility, three voting licenses, ranked queue, live updates, playback | ✅ Done |
 | V.2.2 Music Control Delegation | ✂️ Not built (scope decision: two services out of three) |
 | **V.2.3 Music Playlist Editor** | ⏳ Next |
-| V.4 API docs — Swagger UI + [`docs/realtime.md`](docs/realtime.md) | 🟡 Partial |
+| V.4 API docs — Swagger UI with full request/response schemas, [`docs/openapi.json`](docs/openapi.json), [`docs/realtime.md`](docs/realtime.md) | ✅ Done |
 | V.6 Security — token rotation, ownership checks, DB-level constraints | 🟡 Partial (action logging + rate limiting to do) |
 | V.7 Ramp-up (load testing) | ⏳ To do |
 
@@ -71,7 +71,7 @@ adb reverse tcp:3000 tcp:3000 # after every emulator start (needed for Google/Fa
 npm run start --workspace=apps/mobile   # press a to open on Android, r to reload
 ```
 
-- **API docs:** Swagger UI at <http://localhost:3000/api-docs>; real-time events in [`docs/realtime.md`](docs/realtime.md).
+- **API docs:** Swagger UI at <http://localhost:3000/api-docs> (click **Authorize** and paste an `accessToken` to call protected routes); the same spec as a file in [`docs/openapi.json`](docs/openapi.json); real-time events in [`docs/realtime.md`](docs/realtime.md).
 - **Emails** (verification and reset codes) arrive in Mailpit: <http://localhost:8025>.
 - `make help` lists every target.
 
@@ -126,7 +126,9 @@ An **event** is a party with one live queue.
 
 ## API overview
 
-All routes need `Authorization: Bearer <accessToken>` unless marked public. Full list with request bodies: Swagger UI.
+All routes need `Authorization: Bearer <accessToken>` unless marked public. Every route, body, response and error code is in Swagger UI and [`docs/openapi.json`](docs/openapi.json).
+
+**How the docs are generated:** routes come from the controllers' decorators; request schemas from the DTO classes through the Nest Swagger compiler plugin (`apps/api/nest-cli.json`, which also turns `class-validator` rules into limits like `maxLength`); response schemas from classes in `*/dto/*-responses.dto.ts` that `implements` the shared types in `packages/shared`, so they can't drift. After changing routes or DTOs, restart the API and run `npm run docs:openapi --workspace=apps/api` to refresh `docs/openapi.json`.
 
 | Area | Routes |
 |---|---|
@@ -232,6 +234,7 @@ packages/shared/src/index.ts # API/app contract types (users, auth, tracks, even
 
 | Symptom | Fix |
 |---|---|
+| Swagger shows schemas with no fields | The watch process started before `nest-cli.json` changed (the plugin is read at start). Ctrl+C, `make dev-api`. |
 | New routes answer `404 Cannot GET …` after a change | The API's watch mode rebuilt but didn't restart. Ctrl+C, check `lsof -nP -iTCP:3000 -sTCP:LISTEN` (kill a leftover PID), `make dev-api`. |
 | `ECONNREFUSED 127.0.0.1:5433` | Docker Desktop isn't running → start it, `make db-up`. |
 | `ERR_REQUIRE_ESM` from the TypeORM CLI | Wrong Node version → `nvm use` (22). |
@@ -248,7 +251,7 @@ packages/shared/src/index.ts # API/app contract types (users, auth, tracks, even
 2. **Profile (V.1)** — public / friends / private / music-preference tiers, linking Google or Facebook from the profile.
 3. **V.6** — action logging (platform, device, app version), rate limiting.
 4. **V.7** — load testing with k6 (baseline + spike) and a stated server spec.
-5. Housekeeping — replace the short dev `JWT_ACCESS_SECRET`, drop `JWT_REFRESH_SECRET`, Swagger request/response schemas, a periodic cleanup of expired tokens and codes.
+5. Housekeeping — replace the short dev `JWT_ACCESS_SECRET`, drop `JWT_REFRESH_SECRET`, a periodic cleanup of expired tokens and codes.
 
 ## Full specification
 

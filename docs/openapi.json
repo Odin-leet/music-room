@@ -1,0 +1,2077 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/health": {
+      "get": {
+        "operationId": "HealthController_check",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "ok"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Liveness check (no auth, no database)",
+        "tags": [
+          "Health"
+        ]
+      }
+    },
+    "/users/me": {
+      "get": {
+        "operationId": "UsersController_me",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentUserDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Your own account",
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "operationId": "AuthController_register",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentUserDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed (one message per field)"
+          },
+          "409": {
+            "description": "Email is already registered"
+          }
+        },
+        "summary": "Create an email + password account; a 6-digit verification code is emailed",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "operationId": "AuthController_login",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenPairDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid email or password (same message and timing for every failure)"
+          }
+        },
+        "summary": "Log in with email + password",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "operationId": "AuthController_refresh",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenPairDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unknown, expired, revoked or reused refresh token"
+          }
+        },
+        "summary": "Swap a refresh token for a new pair (rotation). Reusing an old one revokes every session",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "operationId": "AuthController_logout",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "summary": "End this session (always 204)",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/verify-email": {
+      "post": {
+        "operationId": "AuthController_verifyEmail",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyEmailDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Verified (also if already verified)"
+          },
+          "400": {
+            "description": "Invalid code, expired code, or too many attempts"
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Verify your email with the 6-digit code",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/resend-verification": {
+      "post": {
+        "operationId": "AuthController_resendVerification",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "400": {
+            "description": "Email is already verified"
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token"
+          },
+          "429": {
+            "description": "Wait before requesting another code (60 s)"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Email a new verification code",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/forgot-password": {
+      "post": {
+        "operationId": "AuthController_forgotPassword",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForgotPasswordDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "summary": "Email a password-reset code if the account exists (always 204: never reveals whether it does)",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/reset-password": {
+      "post": {
+        "operationId": "AuthController_resetPassword",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "400": {
+            "description": "Invalid or expired code (one message for every failure)"
+          }
+        },
+        "summary": "Set a new password with the emailed code; ends every session",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/oauth/exchange": {
+      "post": {
+        "operationId": "AuthController_oauthExchange",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthExchangeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenPairDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid, expired or already used code, or wrong verifier"
+          }
+        },
+        "summary": "End of a social login: trade the single-use code from the return link + your PKCE verifier for tokens",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/google/start": {
+      "get": {
+        "operationId": "SocialAuthController_googleStart",
+        "parameters": [
+          {
+            "name": "redirect",
+            "required": true,
+            "in": "query",
+            "description": "App deep link to return to (exp://… or musicroom://…)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "code_challenge",
+            "required": true,
+            "in": "query",
+            "description": "PKCE S256 challenge: base64url(SHA-256(verifier)), 43 chars",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirect to Google"
+          },
+          "400": {
+            "description": "redirect is not an app deep link, or bad code_challenge"
+          }
+        },
+        "summary": "Open in a browser tab: redirects to Google sign-in (OpenID Connect)",
+        "tags": [
+          "Social login (browser redirects)"
+        ]
+      }
+    },
+    "/auth/google/callback": {
+      "get": {
+        "operationId": "SocialAuthController_googleCallback",
+        "parameters": [
+          {
+            "name": "code",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "state",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "error",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirects the browser back to the app with ?code= (single-use, 60 s) or ?error=account_exists|email_required|access_denied|…"
+          },
+          "400": {
+            "description": "Forged or expired state"
+          }
+        },
+        "summary": "Google sends the browser here (not for direct calls)",
+        "tags": [
+          "Social login (browser redirects)"
+        ]
+      }
+    },
+    "/auth/facebook/start": {
+      "get": {
+        "operationId": "SocialAuthController_facebookStart",
+        "parameters": [
+          {
+            "name": "redirect",
+            "required": true,
+            "in": "query",
+            "description": "App deep link to return to (exp://… or musicroom://…)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "code_challenge",
+            "required": true,
+            "in": "query",
+            "description": "PKCE S256 challenge: base64url(SHA-256(verifier)), 43 chars",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirect to Facebook"
+          },
+          "400": {
+            "description": "redirect is not an app deep link, or bad code_challenge"
+          }
+        },
+        "summary": "Open in a browser tab: redirects to Facebook login (OAuth 2.0)",
+        "tags": [
+          "Social login (browser redirects)"
+        ]
+      }
+    },
+    "/auth/facebook/callback": {
+      "get": {
+        "operationId": "SocialAuthController_facebookCallback",
+        "parameters": [
+          {
+            "name": "code",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "state",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "error",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirects the browser back to the app with ?code= (single-use, 60 s) or ?error=account_exists|email_required|access_denied|…"
+          },
+          "400": {
+            "description": "Forged or expired state"
+          }
+        },
+        "summary": "Facebook sends the browser here (not for direct calls)",
+        "tags": [
+          "Social login (browser redirects)"
+        ]
+      }
+    },
+    "/music/search": {
+      "get": {
+        "operationId": "MusicController_search",
+        "parameters": [
+          {
+            "name": "q",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "minLength": 1,
+              "maxLength": 100,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TrackSummaryDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Search tracks (Deezer). Results never include preview links",
+        "tags": [
+          "Music (Deezer)"
+        ]
+      }
+    },
+    "/music/tracks/{providerTrackId}/preview": {
+      "get": {
+        "operationId": "MusicController_preview",
+        "parameters": [
+          {
+            "name": "providerTrackId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrackPreviewDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token"
+          },
+          "404": {
+            "description": "Unknown track, or no preview"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "A fresh 30 s preview link (expires in ~15 min: fetch it right before playing)",
+        "tags": [
+          "Music (Deezer)"
+        ]
+      }
+    },
+    "/events": {
+      "post": {
+        "operationId": "EventsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateEventDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventViewDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed, e.g. geo fields missing for license geo, or sent for another license"
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create an event (you become its owner; an invite code is generated)",
+        "tags": [
+          "Events (Track Vote)"
+        ]
+      },
+      "get": {
+        "operationId": "EventsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EventViewDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Public events + the events you are a member of, newest first",
+        "tags": [
+          "Events (Track Vote)"
+        ]
+      }
+    },
+    "/events/join": {
+      "post": {
+        "operationId": "EventsController_joinByCode",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JoinByCodeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventViewDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token"
+          },
+          "404": {
+            "description": "No event with this code"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Join any event with its 8-character invite code (as guest; never downgrades your role)",
+        "tags": [
+          "Events (Track Vote)"
+        ]
+      }
+    },
+    "/events/{id}": {
+      "get": {
+        "operationId": "EventsController_view",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "lat",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "lng",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventViewDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token"
+          },
+          "404": {
+            "description": "Event not found — also answered for private events you are not in, so their existence is not revealed"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Event details, your role, and whether you can vote (send ?lat=&lng= for geo events)",
+        "tags": [
+          "Events (Track Vote)"
+        ]
+      },
+      "patch": {
+        "operationId": "EventsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateEventDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventViewDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token"
+          },
+          "403": {
+            "description": "Only the event owner can do this"
+          },
+          "404": {
+            "description": "Event not found — also answered for private events you are not in, so their existence is not revealed"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Edit an event (owner). Switching license to geo requires all geo fields",
+        "tags": [
+          "Events (Track Vote)"
+        ]
+      },
+      "delete": {
+        "operationId": "EventsController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token"
+          },
+          "403": {
+            "description": "Only the event owner can do this"
+          },
+          "404": {
+            "description": "Event not found — also answered for private events you are not in, so their existence is not revealed"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete an event and its queue (owner)",
+        "tags": [
+          "Events (Track Vote)"
+        ]
+      }
+    },
+    "/events/{id}/join": {
+      "post": {
+        "operationId": "EventsController_joinPublic",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventViewDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token"
+          },
+          "404": {
+            "description": "Event not found — also answered for private events you are not in, so their existence is not revealed"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Join a public event as guest",
+        "tags": [
+          "Events (Track Vote)"
+        ]
+      }
+    },
+    "/events/{id}/invites": {
+      "post": {
+        "operationId": "EventsController_invite",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InviteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InviteResultDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token"
+          },
+          "403": {
+            "description": "Only the event owner can do this"
+          },
+          "404": {
+            "description": "Event not found, or no account with this email"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Invite a registered account by email (owner). Invited accounts can vote under license invited",
+        "tags": [
+          "Events (Track Vote)"
+        ]
+      }
+    },
+    "/events/{id}/queue": {
+      "get": {
+        "operationId": "QueueController_view",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueueViewDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token"
+          },
+          "404": {
+            "description": "Event not found — also answered for private events you are not in, so their existence is not revealed"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Now playing + the ranked queue (score DESC, earliest suggestion first), with votedByMe",
+        "tags": [
+          "Queue (Track Vote)"
+        ]
+      }
+    },
+    "/events/{id}/tracks": {
+      "post": {
+        "operationId": "QueueController_suggest",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SuggestTrackDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueueTrackDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token"
+          },
+          "403": {
+            "description": "Not allowed to vote/suggest. Body has a machine-readable `reason`: not_invited | not_started | ended | location_required | outside_area"
+          },
+          "404": {
+            "description": "Event or Deezer track not found"
+          },
+          "409": {
+            "description": "This track is already in the queue"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Suggest a track by its Deezer id (the server fetches the details itself)",
+        "tags": [
+          "Queue (Track Vote)"
+        ]
+      }
+    },
+    "/events/{id}/tracks/{trackId}/vote": {
+      "post": {
+        "operationId": "QueueController_vote",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "trackId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LocationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoteResultDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token"
+          },
+          "403": {
+            "description": "Not allowed to vote/suggest. Body has a machine-readable `reason`: not_invited | not_started | ended | location_required | outside_area"
+          },
+          "404": {
+            "description": "Event or track not found"
+          },
+          "409": {
+            "description": "The track is no longer queued (playing or played)"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Vote for a queued track (idempotent: voting twice changes nothing)",
+        "tags": [
+          "Queue (Track Vote)"
+        ]
+      },
+      "delete": {
+        "operationId": "QueueController_unvote",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "trackId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "lat",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "lng",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoteResultDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token"
+          },
+          "403": {
+            "description": "Not allowed to vote/suggest. Body has a machine-readable `reason`: not_invited | not_started | ended | location_required | outside_area"
+          },
+          "404": {
+            "description": "Event or track not found"
+          },
+          "409": {
+            "description": "The track is no longer queued"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove your vote (idempotent). Geo events: location as ?lat=&lng=",
+        "tags": [
+          "Queue (Track Vote)"
+        ]
+      }
+    },
+    "/events/{id}/next": {
+      "post": {
+        "operationId": "QueueController_next",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NextTrackDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueueBroadcastDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token"
+          },
+          "403": {
+            "description": "Only the event owner controls playback"
+          },
+          "404": {
+            "description": "Event not found — also answered for private events you are not in, so their existence is not revealed"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Owner: the playing track becomes played, the top of the queue starts playing. A stale currentTrackId does nothing",
+        "tags": [
+          "Queue (Track Vote)"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "Music Room API",
+    "description": "REST API of Music Room (Track Vote events, accounts, music search).\n\n**Auth:** log in with `POST /auth/login` (or a social login), then click **Authorize** and paste the `accessToken`.\nAccess tokens last 15 minutes; get a new pair with `POST /auth/refresh`.\n\n**Real-time** (Socket.IO namespace `/events`): see `docs/realtime.md` in the repository.",
+    "version": "1.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http",
+        "description": "The accessToken from /auth/login"
+      }
+    },
+    "schemas": {
+      "CurrentUserDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "baaa7e88-cac5-41d3-b29d-4b3e64941eec"
+          },
+          "email": {
+            "type": "string",
+            "description": "Always lower-case.",
+            "example": "alice@example.com"
+          },
+          "displayName": {
+            "type": "string",
+            "example": "Alice"
+          },
+          "emailVerified": {
+            "type": "boolean",
+            "description": "False until the user enters the 6-digit code emailed at registration."
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "displayName",
+          "emailVerified"
+        ]
+      },
+      "RegisterDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 72
+          },
+          "displayName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "password",
+          "displayName"
+        ]
+      },
+      "LoginDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "password": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ]
+      },
+      "TokenPairDto": {
+        "type": "object",
+        "properties": {
+          "refreshToken": {
+            "type": "string",
+            "description": "Opaque, single-use refresh token (7 days). Rotated on every POST /auth/refresh.",
+            "example": "Qx3…"
+          },
+          "accessToken": {
+            "type": "string",
+            "description": "Short-lived JWT (15 min). Send as `Authorization: Bearer <accessToken>`."
+          }
+        },
+        "required": [
+          "refreshToken",
+          "accessToken"
+        ]
+      },
+      "RefreshDto": {
+        "type": "object",
+        "properties": {
+          "refreshToken": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "refreshToken"
+        ]
+      },
+      "VerifyEmailDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "pattern": "^\\d{6}$"
+          }
+        },
+        "required": [
+          "code"
+        ]
+      },
+      "ForgotPasswordDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email"
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
+      "ResetPasswordDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "code": {
+            "type": "string",
+            "pattern": "^\\d{6}$"
+          },
+          "newPassword": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 72
+          }
+        },
+        "required": [
+          "email",
+          "code",
+          "newPassword"
+        ]
+      },
+      "OAuthExchangeDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "codeVerifier": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9\\-._~]{43,128}$"
+          }
+        },
+        "required": [
+          "code",
+          "codeVerifier"
+        ]
+      },
+      "TrackSummaryDto": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "enum": [
+              "deezer"
+            ],
+            "type": "string"
+          },
+          "coverUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "isrc": {
+            "type": "string",
+            "nullable": true,
+            "description": "International Standard Recording Code (same recording across providers).",
+            "example": "GBDUW0000053"
+          },
+          "providerTrackId": {
+            "type": "string",
+            "description": "The provider's track id (Deezer: digits).",
+            "example": "3135553"
+          },
+          "title": {
+            "type": "string",
+            "example": "One More Time"
+          },
+          "artist": {
+            "type": "string",
+            "example": "Daft Punk"
+          },
+          "album": {
+            "type": "string",
+            "example": "Discovery"
+          },
+          "durationSec": {
+            "type": "number",
+            "example": 320
+          }
+        },
+        "required": [
+          "provider",
+          "coverUrl",
+          "isrc",
+          "providerTrackId",
+          "title",
+          "artist",
+          "album",
+          "durationSec"
+        ]
+      },
+      "TrackPreviewDto": {
+        "type": "object",
+        "properties": {
+          "expiresAt": {
+            "type": "string",
+            "description": "When the link stops working (≈ 15 minutes).",
+            "format": "date-time"
+          },
+          "url": {
+            "type": "string",
+            "description": "Signed MP3 link (30 s). Never store it: it expires."
+          }
+        },
+        "required": [
+          "expiresAt",
+          "url"
+        ]
+      },
+      "CreateEventDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "visibility": {
+            "type": "string",
+            "enum": [
+              "public",
+              "private"
+            ]
+          },
+          "license": {
+            "type": "string",
+            "enum": [
+              "open",
+              "invited",
+              "geo"
+            ]
+          },
+          "geoLat": {
+            "type": "number"
+          },
+          "geoLng": {
+            "type": "number"
+          },
+          "geoRadiusM": {
+            "type": "number",
+            "minimum": 10,
+            "maximum": 50000
+          },
+          "startsAt": {
+            "type": "string"
+          },
+          "endsAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "visibility"
+        ]
+      },
+      "EventGeoDto": {
+        "type": "object",
+        "properties": {
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lat": {
+            "type": "number",
+            "example": 48.8966
+          },
+          "lng": {
+            "type": "number",
+            "example": 2.3185
+          },
+          "radiusM": {
+            "type": "number",
+            "example": 200
+          }
+        },
+        "required": [
+          "startsAt",
+          "endsAt",
+          "lat",
+          "lng",
+          "radiusM"
+        ]
+      },
+      "UserRefDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "displayName"
+        ]
+      },
+      "ParticipationDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "description": "Present when `allowed` is false.",
+            "enum": [
+              "not_member",
+              "not_invited",
+              "not_started",
+              "ended",
+              "location_required",
+              "outside_area"
+            ],
+            "type": "string"
+          },
+          "allowed": {
+            "type": "boolean",
+            "description": "Whether you can vote and suggest tracks right now."
+          }
+        },
+        "required": [
+          "allowed"
+        ]
+      },
+      "EventViewDto": {
+        "type": "object",
+        "properties": {
+          "visibility": {
+            "enum": [
+              "public",
+              "private"
+            ],
+            "type": "string"
+          },
+          "license": {
+            "description": "open = anyone who can see it · invited = owner + invited accounts · geo = inside an area during a time window",
+            "enum": [
+              "open",
+              "invited",
+              "geo"
+            ],
+            "type": "string"
+          },
+          "geo": {
+            "nullable": true,
+            "description": "Only when license is 'geo'.",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EventGeoDto"
+              }
+            ]
+          },
+          "owner": {
+            "$ref": "#/components/schemas/UserRefDto"
+          },
+          "myRole": {
+            "nullable": true,
+            "description": "Your membership; null = not a member (only possible for public events).",
+            "enum": [
+              "owner",
+              "invited",
+              "guest"
+            ],
+            "type": "string"
+          },
+          "inviteCode": {
+            "type": "string",
+            "nullable": true,
+            "description": "8 characters; only shown to members.",
+            "example": "KVAMDDE4"
+          },
+          "participation": {
+            "description": "For license 'geo' this depends on the location you sent (?lat=&lng=).",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ParticipationDto"
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "example": "Friday Party"
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "visibility",
+          "license",
+          "geo",
+          "owner",
+          "myRole",
+          "inviteCode",
+          "participation",
+          "createdAt",
+          "id",
+          "name",
+          "description"
+        ]
+      },
+      "JoinByCodeDto": {
+        "type": "object",
+        "properties": {
+          "inviteCode": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 8
+          }
+        },
+        "required": [
+          "inviteCode"
+        ]
+      },
+      "UpdateEventDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "visibility": {
+            "type": "string",
+            "enum": [
+              "public",
+              "private"
+            ]
+          },
+          "license": {
+            "type": "string",
+            "enum": [
+              "open",
+              "invited",
+              "geo"
+            ]
+          },
+          "geoLat": {
+            "type": "number"
+          },
+          "geoLng": {
+            "type": "number"
+          },
+          "geoRadiusM": {
+            "type": "number",
+            "minimum": 10,
+            "maximum": 50000
+          },
+          "startsAt": {
+            "type": "string"
+          },
+          "endsAt": {
+            "type": "string"
+          }
+        }
+      },
+      "InviteDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email"
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
+      "InviteResultDto": {
+        "type": "object",
+        "properties": {
+          "invited": {
+            "$ref": "#/components/schemas/UserRefDto"
+          }
+        },
+        "required": [
+          "invited"
+        ]
+      },
+      "QueueTrackDto": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "enum": [
+              "deezer"
+            ],
+            "type": "string"
+          },
+          "coverUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "isrc": {
+            "type": "string",
+            "nullable": true,
+            "description": "International Standard Recording Code (same recording across providers).",
+            "example": "GBDUW0000053"
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "playing",
+              "played"
+            ],
+            "type": "string"
+          },
+          "suggestedBy": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UserRefDto"
+              }
+            ]
+          },
+          "suggestedAt": {
+            "type": "string",
+            "description": "Tie-break: at equal score the earliest suggestion plays first.",
+            "format": "date-time"
+          },
+          "votedByMe": {
+            "type": "boolean",
+            "description": "Whether you voted for this track."
+          },
+          "id": {
+            "type": "string",
+            "description": "The queue entry's id — use it to vote (not the provider's track id)."
+          },
+          "score": {
+            "type": "number",
+            "description": "Number of votes."
+          },
+          "providerTrackId": {
+            "type": "string",
+            "description": "The provider's track id (Deezer: digits).",
+            "example": "3135553"
+          },
+          "title": {
+            "type": "string",
+            "example": "One More Time"
+          },
+          "artist": {
+            "type": "string",
+            "example": "Daft Punk"
+          },
+          "album": {
+            "type": "string",
+            "example": "Discovery"
+          },
+          "durationSec": {
+            "type": "number",
+            "example": 320
+          }
+        },
+        "required": [
+          "provider",
+          "coverUrl",
+          "isrc",
+          "status",
+          "suggestedBy",
+          "suggestedAt",
+          "votedByMe",
+          "id",
+          "score",
+          "providerTrackId",
+          "title",
+          "artist",
+          "album",
+          "durationSec"
+        ]
+      },
+      "QueueViewDto": {
+        "type": "object",
+        "properties": {
+          "nowPlaying": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/QueueTrackDto"
+              }
+            ]
+          },
+          "upcoming": {
+            "description": "Ranked: score DESC, then suggestedAt ASC.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QueueTrackDto"
+            }
+          }
+        },
+        "required": [
+          "nowPlaying",
+          "upcoming"
+        ]
+      },
+      "SuggestTrackDto": {
+        "type": "object",
+        "properties": {
+          "providerTrackId": {
+            "type": "string",
+            "pattern": "^\\d{1,20}$"
+          },
+          "lat": {
+            "type": "number"
+          },
+          "lng": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "providerTrackId"
+        ]
+      },
+      "LocationDto": {
+        "type": "object",
+        "properties": {
+          "lat": {
+            "type": "number"
+          },
+          "lng": {
+            "type": "number"
+          }
+        }
+      },
+      "VoteResultDto": {
+        "type": "object",
+        "properties": {
+          "trackId": {
+            "type": "string"
+          },
+          "score": {
+            "type": "number",
+            "description": "The track's score after your request."
+          },
+          "votedByMe": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "trackId",
+          "score",
+          "votedByMe"
+        ]
+      },
+      "NextTrackDto": {
+        "type": "object",
+        "properties": {
+          "currentTrackId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          }
+        }
+      },
+      "BroadcastTrackDto": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "enum": [
+              "deezer"
+            ],
+            "type": "string"
+          },
+          "coverUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "isrc": {
+            "type": "string",
+            "nullable": true,
+            "description": "International Standard Recording Code (same recording across providers).",
+            "example": "GBDUW0000053"
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "playing",
+              "played"
+            ],
+            "type": "string"
+          },
+          "suggestedBy": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UserRefDto"
+              }
+            ]
+          },
+          "suggestedAt": {
+            "type": "string",
+            "description": "Tie-break: at equal score the earliest suggestion plays first.",
+            "format": "date-time"
+          },
+          "id": {
+            "type": "string",
+            "description": "The queue entry's id — use it to vote (not the provider's track id)."
+          },
+          "score": {
+            "type": "number",
+            "description": "Number of votes."
+          },
+          "providerTrackId": {
+            "type": "string",
+            "description": "The provider's track id (Deezer: digits).",
+            "example": "3135553"
+          },
+          "title": {
+            "type": "string",
+            "example": "One More Time"
+          },
+          "artist": {
+            "type": "string",
+            "example": "Daft Punk"
+          },
+          "album": {
+            "type": "string",
+            "example": "Discovery"
+          },
+          "durationSec": {
+            "type": "number",
+            "example": 320
+          }
+        },
+        "required": [
+          "provider",
+          "coverUrl",
+          "isrc",
+          "status",
+          "suggestedBy",
+          "suggestedAt",
+          "id",
+          "score",
+          "providerTrackId",
+          "title",
+          "artist",
+          "album",
+          "durationSec"
+        ]
+      },
+      "QueueBroadcastDto": {
+        "type": "object",
+        "properties": {
+          "nowPlaying": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BroadcastTrackDto"
+              }
+            ]
+          },
+          "upcoming": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BroadcastTrackDto"
+            }
+          },
+          "eventId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "nowPlaying",
+          "upcoming",
+          "eventId"
+        ]
+      }
+    }
+  }
+}

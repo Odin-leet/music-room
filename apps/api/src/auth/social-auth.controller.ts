@@ -1,4 +1,11 @@
 import { Controller, Get, Logger, Query, Redirect } from '@nestjs/common';
+import {
+  ApiBadRequestResponse,
+  ApiFoundResponse,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
 import type { User } from '../users/user.entity';
 import { FacebookOAuthService } from './facebook-oauth.service';
 import { GoogleOAuthService } from './google-oauth.service';
@@ -10,6 +17,7 @@ import { OAuthStateService, type OAuthProvider } from './oauth-state.service';
 //   /auth/<provider>/callback the provider sends the browser back here with ?code&state;
 //                             we identify the user and send the browser back to the app
 //                             with a single-use login code (never tokens or profile data)
+@ApiTags('Social login (browser redirects)')
 @Controller('auth')
 export class SocialAuthController {
   private readonly logger = new Logger(SocialAuthController.name);
@@ -21,12 +29,20 @@ export class SocialAuthController {
     private readonly oauthLogin: OAuthLoginService,
   ) {}
 
+  @ApiOperation({ summary: 'Open in a browser tab: redirects to Google sign-in (OpenID Connect)' })
+  @ApiQuery({ name: 'redirect', description: 'App deep link to return to (exp://… or musicroom://…)' })
+  @ApiQuery({ name: 'code_challenge', description: 'PKCE S256 challenge: base64url(SHA-256(verifier)), 43 chars' })
+  @ApiFoundResponse({ description: 'Redirect to Google' })
+  @ApiBadRequestResponse({ description: 'redirect is not an app deep link, or bad code_challenge' })
   @Get('google/start')
   @Redirect()
   googleStart(@Query('redirect') redirect?: string, @Query('code_challenge') challenge?: string) {
     return { url: this.google.buildAuthUrl(this.state.create('google', redirect, challenge)) };
   }
 
+  @ApiOperation({ summary: 'Google sends the browser here (not for direct calls)' })
+  @ApiFoundResponse({ description: 'Redirects the browser back to the app with ?code= (single-use, 60 s) or ?error=account_exists|email_required|access_denied|…' })
+  @ApiBadRequestResponse({ description: 'Forged or expired state' })
   @Get('google/callback')
   @Redirect()
   googleCallback(
@@ -39,12 +55,20 @@ export class SocialAuthController {
     );
   }
 
+  @ApiOperation({ summary: 'Open in a browser tab: redirects to Facebook login (OAuth 2.0)' })
+  @ApiQuery({ name: 'redirect', description: 'App deep link to return to (exp://… or musicroom://…)' })
+  @ApiQuery({ name: 'code_challenge', description: 'PKCE S256 challenge: base64url(SHA-256(verifier)), 43 chars' })
+  @ApiFoundResponse({ description: 'Redirect to Facebook' })
+  @ApiBadRequestResponse({ description: 'redirect is not an app deep link, or bad code_challenge' })
   @Get('facebook/start')
   @Redirect()
   facebookStart(@Query('redirect') redirect?: string, @Query('code_challenge') challenge?: string) {
     return { url: this.facebook.buildAuthUrl(this.state.create('facebook', redirect, challenge)) };
   }
 
+  @ApiOperation({ summary: 'Facebook sends the browser here (not for direct calls)' })
+  @ApiFoundResponse({ description: 'Redirects the browser back to the app with ?code= (single-use, 60 s) or ?error=account_exists|email_required|access_denied|…' })
+  @ApiBadRequestResponse({ description: 'Forged or expired state' })
   @Get('facebook/callback')
   @Redirect()
   facebookCallback(

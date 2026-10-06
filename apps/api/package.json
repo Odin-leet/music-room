@@ -24,7 +24,8 @@
     "migration:run": "typeorm-ts-node-commonjs migration:run -d src/data-source.ts",
     "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/data-source.ts",
     "test:race": "node test/race/vote-race.mjs",
-    "test:realtime": "node test/realtime/realtime.mjs"
+    "test:realtime": "node test/realtime/realtime.mjs",
+    "docs:openapi": "node scripts/export-openapi.mjs"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.1",

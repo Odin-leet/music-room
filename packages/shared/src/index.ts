@@ -123,4 +123,35 @@ export interface VoteResult {
   votedByMe: boolean;
 }
 
+// ---------- Track Vote realtime (Socket.IO, namespace /events) ----------
+// Full reference: docs/realtime.md
+
+// Same for every listener, so it has no votedByMe: each app keeps its own
+// votes (from GET /queue and its own vote/unvote responses).
+export type BroadcastTrack = Omit<QueueTrack, 'votedByMe'>;
+
+export interface QueueBroadcast {
+  eventId: string;
+  nowPlaying: BroadcastTrack | null;
+  upcoming: BroadcastTrack[];
+}
+
+// Server -> client
+export interface ServerToClientEvents {
+  'queue:updated': (payload: QueueBroadcast) => void;
+  // Details changed (name, license, …) or memberships changed: refetch GET /events/:id.
+  'event:updated': (payload: { eventId: string }) => void;
+  'event:deleted': (payload: { eventId: string }) => void;
+  // You were removed from the room (e.g. the event became private).
+  'event:access-lost': (payload: { eventId: string }) => void;
+}
+
+export type JoinAck = { ok: true } | { ok: false; error: string };
+
+// Client -> server (with an acknowledgement callback)
+export interface ClientToServerEvents {
+  'event:join': (payload: { eventId: string }, ack: (res: JoinAck) => void) => void;
+  'event:leave': (payload: { eventId: string }, ack: (res: { ok: true }) => void) => void;
+}
+
 // Playlist shapes land here once the Playlist Editor is built.

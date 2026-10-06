@@ -23,7 +23,8 @@
     "migration:generate": "typeorm-ts-node-commonjs migration:generate -d src/data-source.ts",
     "migration:run": "typeorm-ts-node-commonjs migration:run -d src/data-source.ts",
     "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/data-source.ts",
-    "test:race": "node test/race/vote-race.mjs"
+    "test:race": "node test/race/vote-race.mjs",
+    "test:realtime": "node test/realtime/realtime.mjs"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.1",
@@ -33,8 +34,10 @@
     "@nestjs/observe": "^0.3.0",
     "@nestjs/passport": "^12.0.0",
     "@nestjs/platform-express": "^12.0.1",
+    "@nestjs/platform-socket.io": "^12.1.2",
     "@nestjs/swagger": "^12.0.2",
     "@nestjs/typeorm": "^12.0.1",
+    "@nestjs/websockets": "^12.1.2",
     "bcryptjs": "^3.0.3",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
@@ -46,6 +49,7 @@
     "pg": "^8.23.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
+    "socket.io": "^4.8.4",
     "typeorm": "^1.1.1"
   },
   "devDependencies": {
@@ -63,6 +67,7 @@
     "oxlint": "^1.58.0",
     "oxlint-tsgolint": "^7.0.2001",
     "prettier": "^3.4.2",
+    "socket.io-client": "^4.8.4",
     "source-map-support": "^0.5.21",
     "supertest": "^7.0.0",
     "ts-jest": "^29.4.0",

@@ -48,6 +48,8 @@ import { SocialAuthController } from './social-auth.controller';
     }),
   ],
   controllers: [AuthController, SocialAuthController],
+  // JwtModule: the realtime gateway verifies access tokens with the same secret.
+  exports: [JwtModule],
   providers: [
     AuthService,
     EmailVerificationService,

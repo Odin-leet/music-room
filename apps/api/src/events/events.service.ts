@@ -12,6 +12,7 @@ import { User } from '../users/user.entity';
 import type { CreateEventDto, UpdateEventDto } from './dto/event-input.dto';
 import { EventMember, type MemberRole } from './event-member.entity';
 import { canParticipate, canView, type Location } from './event-policy';
+import { EventsBus } from './events-bus';
 import { Event } from './event.entity';
 
 // No 0/O or 1/I/L: codes get read aloud and typed on phones.
@@ -30,6 +31,7 @@ export class EventsService {
     @InjectRepository(EventMember) private readonly members: Repository<EventMember>,
     @InjectRepository(User) private readonly users: Repository<User>,
     private readonly dataSource: DataSource,
+    private readonly bus: EventsBus,
   ) {}
 
   async create(userId: string, dto: CreateEventDto): Promise<EventView> {
@@ -107,12 +109,14 @@ export class EventsService {
       license,
       ...geo,
     });
+    this.bus.publish('event.changed', { eventId: event.id });
     return this.view(event.id, userId);
   }
 
   async remove(eventId: string, userId: string) {
     const { event } = await this.loadAsOwner(eventId, userId);
     await this.events.delete(event.id); // members, tracks, votes cascade
+    this.bus.publish('event.deleted', { eventId: event.id });
   }
 
   // Public events: anyone can join as a guest (no code needed).
@@ -145,6 +149,8 @@ export class EventsService {
       .values({ eventId: event.id, userId: invitee.id, role: 'invited' })
       .orUpdate(['role'], ['eventId', 'userId'])
       .execute();
+    // The invitee's participation changed: their app should refetch.
+    this.bus.publish('event.changed', { eventId: event.id });
     return { invited: { id: invitee.id, displayName: invitee.displayName } };
   }
 
@@ -161,6 +167,16 @@ export class EventsService {
     const role = member?.role ?? null;
     if (!canView(event, role).allowed) throw new NotFoundException('Event not found');
     return { event: event as Event & { owner: User }, role };
+  }
+
+  // For the realtime gateway: can this user (still) see the event?
+  async canUserView(eventId: string, userId: string): Promise<boolean> {
+    try {
+      await this.loadVisible(eventId, userId);
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   private async loadAsOwner(eventId: string, userId: string): Promise<Loaded> {

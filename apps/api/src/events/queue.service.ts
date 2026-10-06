@@ -1,11 +1,19 @@
 import { ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import type { ParticipationDenyReason, QueueTrack, QueueView, VoteResult } from '@music-room/shared';
+import type {
+  BroadcastTrack,
+  ParticipationDenyReason,
+  QueueBroadcast,
+  QueueTrack,
+  QueueView,
+  VoteResult,
+} from '@music-room/shared';
 import { DataSource, In, QueryFailedError, Repository } from 'typeorm';
 import { DeezerService } from '../music/deezer.service';
 import type { User } from '../users/user.entity';
 import { canParticipate, type Location } from './event-policy';
 import { EventTrack } from './event-track.entity';
+import { EventsBus } from './events-bus';
 import { EventsService } from './events.service';
 import { Vote } from './vote.entity';
 
@@ -31,18 +39,13 @@ export class QueueService {
     private readonly dataSource: DataSource,
     @InjectRepository(EventTrack) private readonly tracks: Repository<EventTrack>,
     @InjectRepository(Vote) private readonly votes: Repository<Vote>,
+    private readonly bus: EventsBus,
   ) {}
 
   async queue(eventId: string, userId: string): Promise<QueueView> {
     await this.events.loadVisible(eventId, userId); // 404 if I can't see it
 
-    const rows = await this.tracks.find({
-      where: { eventId, status: In(['queued', 'playing']) },
-      relations: { suggestedBy: true },
-      // The ranking rule: most votes first; equal votes -> earliest suggestion
-      // first; id last only so the order is fully deterministic.
-      order: { score: 'DESC', suggestedAt: 'ASC', id: 'ASC' },
-    });
+    const rows = await this.rankedRows(eventId);
     const mine = new Set(
       rows.length
         ? (await this.votes.findBy({ userId, eventTrackId: In(rows.map((t) => t.id)) })).map((v) => v.eventTrackId)
@@ -50,6 +53,17 @@ export class QueueService {
     );
     const view = rows.map((t) => toQueueTrack(t, mine.has(t.id)));
     return {
+      nowPlaying: view.find((t) => t.status === 'playing') ?? null,
+      upcoming: view.filter((t) => t.status === 'queued'),
+    };
+  }
+
+  // The same queue for every listener (no votedByMe): what the realtime
+  // gateway broadcasts. Access is checked when a socket joins the room.
+  async broadcastView(eventId: string): Promise<QueueBroadcast> {
+    const view = (await this.rankedRows(eventId)).map(toBroadcastTrack);
+    return {
+      eventId,
       nowPlaying: view.find((t) => t.status === 'playing') ?? null,
       upcoming: view.filter((t) => t.status === 'queued'),
     };
@@ -75,6 +89,7 @@ export class QueueService {
         }),
       );
       const withUser = await this.tracks.findOneOrFail({ where: { id: saved.id }, relations: { suggestedBy: true } });
+      this.bus.publish('queue.changed', { eventId });
       return toQueueTrack(withUser, false);
     } catch (err) {
       // The partial unique index: this song is already waiting in the queue.
@@ -95,7 +110,7 @@ export class QueueService {
   // Voting twice is not an error: it answers the current state (idempotent).
   async vote(eventId: string, trackId: string, userId: string, location: Location | null): Promise<VoteResult> {
     await this.requireParticipation(eventId, userId, location);
-    return this.dataSource.transaction(async (tx) => {
+    const result = await this.dataSource.transaction(async (tx) => {
       await this.requireQueuedTrack(tx.getRepository(EventTrack), eventId, trackId);
 
       const inserted = await tx
@@ -107,18 +122,22 @@ export class QueueService {
         .returning('"userId"')
         .execute();
 
-      const score = (inserted.raw as unknown[]).length
+      const changed = (inserted.raw as unknown[]).length > 0;
+      const score = changed
         ? await this.bump(tx.getRepository(EventTrack), trackId, '+')
         : (await tx.findOneByOrFail(EventTrack, { id: trackId })).score;
-      return { trackId, score, votedByMe: true };
+      return { result: { trackId, score, votedByMe: true }, changed };
     });
+    // After commit, and only if something actually changed.
+    if (result.changed) this.bus.publish('queue.changed', { eventId });
+    return result.result;
   }
 
   // Mirror image: DELETE … RETURNING tells us whether a vote really existed;
   // only then score = score - 1.
   async unvote(eventId: string, trackId: string, userId: string, location: Location | null): Promise<VoteResult> {
     await this.requireParticipation(eventId, userId, location);
-    return this.dataSource.transaction(async (tx) => {
+    const result = await this.dataSource.transaction(async (tx) => {
       await this.requireQueuedTrack(tx.getRepository(EventTrack), eventId, trackId);
 
       const deleted = await tx
@@ -129,14 +148,27 @@ export class QueueService {
         .returning('"userId"')
         .execute();
 
-      const score = (deleted.raw as unknown[]).length
+      const changed = (deleted.raw as unknown[]).length > 0;
+      const score = changed
         ? await this.bump(tx.getRepository(EventTrack), trackId, '-')
         : (await tx.findOneByOrFail(EventTrack, { id: trackId })).score;
-      return { trackId, score, votedByMe: false };
+      return { result: { trackId, score, votedByMe: false }, changed };
     });
+    if (result.changed) this.bus.publish('queue.changed', { eventId });
+    return result.result;
   }
 
   // ---------- helpers ----------
+
+  private rankedRows(eventId: string) {
+    return this.tracks.find({
+      where: { eventId, status: In(['queued', 'playing']) },
+      relations: { suggestedBy: true },
+      // The ranking rule: most votes first; equal votes -> earliest suggestion
+      // first; id last only so the order is fully deterministic.
+      order: { score: 'DESC', suggestedAt: 'ASC', id: 'ASC' },
+    });
+  }
 
   private async requireParticipation(eventId: string, userId: string, location: Location | null) {
     const { event, role } = await this.events.loadVisible(eventId, userId);
@@ -175,6 +207,10 @@ export class QueueService {
 }
 
 function toQueueTrack(t: EventTrack & { suggestedBy?: User | null }, votedByMe: boolean): QueueTrack {
+  return { ...toBroadcastTrack(t), votedByMe };
+}
+
+function toBroadcastTrack(t: EventTrack & { suggestedBy?: User | null }): BroadcastTrack {
   return {
     id: t.id,
     provider: 'deezer',
@@ -189,7 +225,6 @@ function toQueueTrack(t: EventTrack & { suggestedBy?: User | null }, votedByMe: 
     status: t.status,
     suggestedBy: t.suggestedBy ? { id: t.suggestedBy.id, displayName: t.suggestedBy.displayName } : null,
     suggestedAt: t.suggestedAt.toISOString(),
-    votedByMe,
   };
 }
 

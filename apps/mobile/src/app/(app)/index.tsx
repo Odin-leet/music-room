@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { API_URL } from '@/config';
 import { useCurrentUser } from '@/session/CurrentUserProvider';
@@ -50,6 +51,8 @@ export default function HomeScreen() {
         loading={health.state === 'loading'}
         onPress={() => void check()}
       />
+      {/* TEMPORARY: music provider experiment */}
+      <Button title="Music test" variant="secondary" onPress={() => router.push('/music-test')} />
       <Button
         title="Log out"
         variant="secondary"

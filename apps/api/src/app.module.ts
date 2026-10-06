@@ -8,6 +8,7 @@ import { OAuthLoginCode } from './auth/oauth-login-code.entity';
 import { PasswordResetCode } from './auth/password-reset-code.entity';
 import { RefreshToken } from './auth/refresh-token.entity';
 import { HealthController } from './health/health.controller';
+import { MusicModule } from './music/music.module';
 import { UsersModule } from './users/users.module';
 
 @Module({
@@ -27,6 +28,7 @@ import { UsersModule } from './users/users.module';
     }),
     UsersModule,
     AuthModule,
+    MusicModule,
   ],
   controllers: [HealthController],
 })

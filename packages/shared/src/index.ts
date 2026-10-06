@@ -31,5 +31,27 @@ export interface PublicUserProfile {
   musicPreferences: string[];
 }
 
-// Event/Track/Vote/Playlist shapes land here once the Track Vote and
+// A track from the music provider, as our API returns it. Deliberately has
+// no preview URL: Deezer's preview links expire after ~15 minutes, so a
+// fresh one is fetched right before playing (GET /music/tracks/:id/preview).
+export interface TrackSummary {
+  provider: 'deezer';
+  providerTrackId: string;
+  title: string;
+  artist: string;
+  album: string;
+  coverUrl: string | null;
+  durationSec: number;
+  // International Standard Recording Code: identifies the same recording
+  // across providers, if we ever add another one.
+  isrc: string | null;
+}
+
+// GET /music/tracks/:providerTrackId/preview
+export interface TrackPreview {
+  url: string;
+  expiresAt: string; // ISO date
+}
+
+// Event/Vote/Playlist shapes land here once the Track Vote and
 // Playlist Editor services are built.

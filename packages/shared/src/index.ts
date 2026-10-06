@@ -97,4 +97,30 @@ export interface EventView {
   createdAt: string;
 }
 
+export type QueueTrackStatus = 'queued' | 'playing' | 'played';
+
+// One entry of an event's queue.
+export interface QueueTrack extends TrackSummary {
+  id: string; // the queue entry's id (not the provider's track id)
+  score: number; // number of votes
+  status: QueueTrackStatus;
+  suggestedBy: { id: string; displayName: string } | null;
+  suggestedAt: string; // ISO date — tie-break: earliest first
+  votedByMe: boolean;
+}
+
+// GET /events/:id/queue
+export interface QueueView {
+  nowPlaying: QueueTrack | null;
+  // Ranked: score DESC, then suggestedAt ASC (ties never reshuffle).
+  upcoming: QueueTrack[];
+}
+
+// POST / DELETE /events/:id/tracks/:trackId/vote
+export interface VoteResult {
+  trackId: string;
+  score: number;
+  votedByMe: boolean;
+}
+
 // Playlist shapes land here once the Playlist Editor is built.

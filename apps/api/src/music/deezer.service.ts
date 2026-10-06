@@ -32,6 +32,15 @@ export class DeezerService {
     return body.data.filter((t) => t.readable !== false).map(toSummary);
   }
 
+  // The server's own copy of a track's details: when someone suggests a
+  // track we look it up here instead of trusting what the app sent.
+  async track(providerTrackId: string): Promise<TrackSummary> {
+    if (!/^\d{1,20}$/.test(providerTrackId)) throw new NotFoundException('Track not found');
+    const track = await this.get<DeezerTrack>(`/track/${providerTrackId}`);
+    if (track.readable === false) throw new NotFoundException('This track is not available');
+    return toSummary(track);
+  }
+
   // Preview links are signed and expire (~15 min), so they're never stored:
   // ask Deezer for a fresh one right before playing.
   async preview(providerTrackId: string): Promise<TrackPreview> {

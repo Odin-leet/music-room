@@ -53,5 +53,48 @@ export interface TrackPreview {
   expiresAt: string; // ISO date
 }
 
-// Event/Vote/Playlist shapes land here once the Track Vote and
-// Playlist Editor services are built.
+// ---------- Track Vote ----------
+
+export type EventVisibility = 'public' | 'private';
+// open = anyone who can see it · invited = owner + invited accounts only ·
+// geo = inside an area during a time window
+export type EventLicense = 'open' | 'invited' | 'geo';
+export type MemberRole = 'owner' | 'invited' | 'guest';
+
+// Why you can't vote/suggest (or see), so the app can explain it.
+export type ParticipationDenyReason =
+  | 'not_member'
+  | 'not_invited'
+  | 'not_started'
+  | 'ended'
+  | 'location_required'
+  | 'outside_area';
+
+export type Participation = { allowed: true } | { allowed: false; reason: ParticipationDenyReason };
+
+export interface EventGeo {
+  lat: number;
+  lng: number;
+  radiusM: number;
+  startsAt: string; // ISO date
+  endsAt: string; // ISO date
+}
+
+// GET /events, GET /events/:id, POST /events …
+export interface EventView {
+  id: string;
+  name: string;
+  description: string;
+  visibility: EventVisibility;
+  license: EventLicense;
+  geo: EventGeo | null; // only when license = 'geo'
+  owner: { id: string; displayName: string };
+  myRole: MemberRole | null; // null = not a member (public events only)
+  // Only shown to members: it's what lets people into a private event.
+  inviteCode: string | null;
+  // For license 'geo' this depends on your location: pass ?lat=&lng=.
+  participation: Participation;
+  createdAt: string;
+}
+
+// Playlist shapes land here once the Playlist Editor is built.

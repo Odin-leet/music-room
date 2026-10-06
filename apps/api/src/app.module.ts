@@ -11,6 +11,7 @@ import { Event } from './events/event.entity';
 import { Vote } from './events/vote.entity';
 import { PasswordResetCode } from './auth/password-reset-code.entity';
 import { RefreshToken } from './auth/refresh-token.entity';
+import { EventsModule } from './events/events.module';
 import { HealthController } from './health/health.controller';
 import { MusicModule } from './music/music.module';
 import { UsersModule } from './users/users.module';
@@ -43,6 +44,7 @@ import { UsersModule } from './users/users.module';
     UsersModule,
     AuthModule,
     MusicModule,
+    EventsModule,
   ],
   controllers: [HealthController],
 })

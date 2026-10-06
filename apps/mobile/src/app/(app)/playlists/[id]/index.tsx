@@ -2,9 +2,9 @@ import type { PlaylistTracksView, PlaylistTrackView, PlaylistView } from '@music
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Alert, Image, Pressable, StyleSheet, View } from 'react-native';
-import DraggableFlatList, { type RenderItemParams } from 'react-native-draggable-flatlist';
 import { ApiError } from '@/api/client';
 import { EDIT_DENY_MESSAGE, playlistSubtitle } from '@/playlists/labels';
+import { DragList } from '@/playlists/DragList';
 import { afterIdAt, guessPosition, sorted } from '@/playlists/order';
 import { PlaylistPlayer } from '@/playlists/PlaylistPlayer';
 import { usePlaylistRealtime } from '@/playlists/usePlaylistRealtime';
@@ -97,10 +97,7 @@ export default function PlaylistScreen() {
     if (!tracks) return;
     const to = from + delta;
     if (to < 0 || to >= tracks.length) return;
-    const list = [...tracks];
-    const [t] = list.splice(from, 1);
-    list.splice(to, 0, t);
-    commitMove(list, to);
+    moveTo(from, to);
   };
 
   const remove = (track: PlaylistTrackView) => {
@@ -122,32 +119,37 @@ export default function PlaylistScreen() {
 
   const canEdit = playlist.canEdit.allowed;
 
-  const renderItem = ({ item, drag, isActive, getIndex }: RenderItemParams<PlaylistTrackView>) => {
-    const index = getIndex() ?? 0;
+  const moveTo = (from: number, to: number) => {
+    const list = [...tracks];
+    const [t] = list.splice(from, 1);
+    list.splice(to, 0, t);
+    commitMove(list, to);
+  };
+
+  const renderRow = (item: PlaylistTrackView, index: number) => {
     const playing = item.id === playingId;
     return (
-      <Pressable
-        style={[styles.row, isActive && styles.rowActive]}
-        onPress={() => setPlayingId(item.id)}
-        onLongPress={canEdit ? drag : undefined}
-        delayLongPress={250}
-        disabled={isActive}
-        accessibilityRole="button"
-        accessibilityLabel={`${index + 1}. ${item.title} by ${item.artist}. Tap to play${canEdit ? ', long press to drag' : ''}`}
-      >
-        <Text variant="muted" style={styles.index}>
-          {playing ? '▶' : index + 1}
-        </Text>
-        {item.coverUrl ? <Image source={{ uri: item.coverUrl }} style={styles.cover} /> : <View style={styles.cover} />}
-        <View style={styles.rowText}>
-          <Text numberOfLines={1} style={playing && styles.playing}>
-            {item.title}
+      <View style={styles.row}>
+        <Pressable
+          style={styles.rowMain}
+          onPress={() => setPlayingId(item.id)}
+          accessibilityRole="button"
+          accessibilityLabel={`${index + 1}. ${item.title} by ${item.artist}. Tap to play`}
+        >
+          <Text variant="muted" style={styles.index}>
+            {playing ? '▶' : index + 1}
           </Text>
-          <Text variant="muted" numberOfLines={1}>
-            {item.artist}
-            {item.addedBy ? ` · ${item.addedBy.displayName}` : ''}
-          </Text>
-        </View>
+          {item.coverUrl ? <Image source={{ uri: item.coverUrl }} style={styles.cover} /> : <View style={styles.cover} />}
+          <View style={styles.rowText}>
+            <Text numberOfLines={1} style={playing && styles.playing}>
+              {item.title}
+            </Text>
+            <Text variant="muted" numberOfLines={1}>
+              {item.artist}
+              {item.addedBy ? ` · ${item.addedBy.displayName}` : ''}
+            </Text>
+          </View>
+        </Pressable>
         {canEdit ? (
           <View style={styles.tools}>
             <IconButton label="▲" a11y={`Move ${item.title} up`} disabled={index === 0} onPress={() => moveBy(index, -1)} />
@@ -169,7 +171,7 @@ export default function PlaylistScreen() {
             />
           </View>
         ) : null}
-      </Pressable>
+      </View>
     );
   };
 
@@ -204,22 +206,17 @@ export default function PlaylistScreen() {
       {error ? <Text variant="error">{error}</Text> : null}
 
       <View style={styles.flex}>
-        <DraggableFlatList
-          data={tracks}
-          keyExtractor={(t) => t.id}
-          renderItem={renderItem}
-          onDragEnd={({ data, from, to }) => {
-            if (from !== to) commitMove(data, to);
-          }}
-          activationDistance={10}
-          contentContainerStyle={styles.list}
-          ListEmptyComponent={
-            <Text variant="muted">{canEdit ? 'No tracks yet. Add the first one!' : 'No tracks yet.'}</Text>
-          }
+        <DragList
+          items={tracks}
+          keyOf={(t) => t.id}
+          renderRow={renderRow}
+          enabled={canEdit}
+          onMove={moveTo}
+          empty={<Text variant="muted">{canEdit ? 'No tracks yet. Add the first one!' : 'No tracks yet.'}</Text>}
         />
       </View>
       {canEdit && tracks.length > 1 ? (
-        <Text variant="muted">Tap a track to play it · long press and drag, or ▲ ▼, to reorder</Text>
+        <Text variant="muted">Tap a track to play it · drag ≡, or use ▲ ▼, to reorder</Text>
       ) : null}
       <Button title="Back" variant="secondary" onPress={() => router.back()} />
     </Screen>
@@ -245,16 +242,8 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   headerText: { flex: 1 },
   flex: { flex: 1 },
-  list: { gap: spacing.sm, paddingBottom: spacing.md },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    padding: spacing.sm,
-    borderRadius: radius.md,
-    backgroundColor: colors.surface,
-  },
-  rowActive: { borderWidth: 1, borderColor: colors.primary, opacity: 0.9 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingRight: spacing.sm },
+  rowMain: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingLeft: spacing.xs },
   index: { width: 22, textAlign: 'center' },
   cover: { width: 44, height: 44, borderRadius: radius.sm, backgroundColor: colors.border },
   rowText: { flex: 1 },

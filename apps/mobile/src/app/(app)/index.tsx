@@ -51,6 +51,7 @@ export default function HomeScreen() {
         loading={health.state === 'loading'}
         onPress={() => void check()}
       />
+      <Button title="Events" onPress={() => router.push('/events')} />
       {/* TEMPORARY: music provider experiment */}
       <Button title="Music test" variant="secondary" onPress={() => router.push('/music-test')} />
       <Button

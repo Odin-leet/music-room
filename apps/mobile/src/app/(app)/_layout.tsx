@@ -42,6 +42,7 @@ function AppNavigator() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Protected guard={verified}>
         <Stack.Screen name="index" />
+        <Stack.Screen name="events" />
         {/* TEMPORARY: music provider experiment */}
         <Stack.Screen name="music-test" />
       </Stack.Protected>

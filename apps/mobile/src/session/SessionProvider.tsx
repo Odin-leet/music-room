@@ -37,6 +37,10 @@ type Session = {
   // For calls to protected routes. Adds the access token and, when it has
   // expired (401), refreshes once and retries — the caller never sees it.
   authedApi: <T>(path: string, options?: Omit<ApiOptions, 'token'>) => Promise<T>;
+  // For connections that carry the token themselves (the realtime socket):
+  // the current access token, and a way to get a fresh one after a refusal.
+  getAccessToken: () => string | null;
+  refreshAccessToken: () => Promise<string | null>;
   signIn: (email: string, password: string) => Promise<void>;
   // Resolves false if the user closed the browser; throws SocialLoginError otherwise.
   signInWithProvider: (provider: SocialProvider) => Promise<boolean>;
@@ -131,6 +135,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     [refresh],
   );
 
+  const getAccessToken = useCallback(() => accessTokenRef.current, []);
+  // Same single-flight refresh as authedApi (resolves null if the session is over).
+  const refreshAccessToken = useCallback(() => refresh().catch(() => null), [refresh]);
+
   const signIn = useCallback(
     async (email: string, password: string) => {
       const tokens = await api<AuthTokens>('/auth/login', {
@@ -189,8 +197,17 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [endSession]);
 
   const value = useMemo<Session>(
-    () => ({ status, authedApi, signIn, signInWithProvider, register, signOut }),
-    [status, authedApi, signIn, signInWithProvider, register, signOut],
+    () => ({
+      status,
+      authedApi,
+      getAccessToken,
+      refreshAccessToken,
+      signIn,
+      signInWithProvider,
+      register,
+      signOut,
+    }),
+    [status, authedApi, getAccessToken, refreshAccessToken, signIn, signInWithProvider, register, signOut],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

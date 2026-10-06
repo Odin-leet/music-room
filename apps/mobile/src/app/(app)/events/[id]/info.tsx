@@ -10,7 +10,9 @@ import { useSession } from '@/session/SessionProvider';
 import { spacing } from '@/theme';
 import { Button, Card, Screen, Text, TextField } from '@/ui';
 
-export default function EventScreen() {
+// Event details: who can vote, invite code, invites, delete.
+// The queue itself is the event's main screen (./index.tsx).
+export default function EventInfoScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { authedApi } = useSession();
   const [event, setEvent] = useState<EventView | null>(null);
@@ -160,7 +162,8 @@ export default function EventScreen() {
                   onPress: () =>
                     void run(async () => {
                       await authedApi(`/events/${event.id}`, { method: 'DELETE' });
-                      router.back();
+                      // Not back(): that would land on this (now deleted) event's queue.
+                      router.dismissTo('/events');
                     }),
                 },
               ])

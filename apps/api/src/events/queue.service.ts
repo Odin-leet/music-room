@@ -158,6 +158,38 @@ export class QueueService {
     return result.result;
   }
 
+  // Owner moves the queue on: the playing track becomes 'played', the top of
+  // the queue becomes 'playing'. Safe against double taps and races:
+  // - the event row is locked (SELECT … FOR UPDATE), so concurrent calls for
+  //   the same event run one after the other;
+  // - `currentTrackId` = what the owner's phone thinks is playing; if that's
+  //   no longer true (someone else already advanced), nothing happens. The
+  //   automatic "preview ended -> next" relies on this.
+  // - a partial unique index allows at most one 'playing' track per event.
+  async next(eventId: string, userId: string, currentTrackId: string | null | undefined) {
+    const { role } = await this.events.loadVisible(eventId, userId);
+    if (role !== 'owner') throw new ForbiddenException('Only the event owner controls playback');
+
+    const changed = await this.dataSource.transaction(async (tx) => {
+      await tx.query('SELECT 1 FROM events WHERE id = $1 FOR UPDATE', [eventId]);
+      const repo = tx.getRepository(EventTrack);
+
+      const playing = await repo.findOneBy({ eventId, status: 'playing' });
+      if (currentTrackId !== undefined && (playing?.id ?? null) !== currentTrackId) return false;
+
+      if (playing) await repo.update(playing.id, { status: 'played' });
+      const top = await repo.findOne({
+        where: { eventId, status: 'queued' },
+        order: { score: 'DESC', suggestedAt: 'ASC', id: 'ASC' },
+      });
+      if (top) await repo.update(top.id, { status: 'playing' });
+      return Boolean(playing || top);
+    });
+
+    if (changed) this.bus.publish('queue.changed', { eventId });
+    return this.broadcastView(eventId);
+  }
+
   // ---------- helpers ----------
 
   private rankedRows(eventId: string) {

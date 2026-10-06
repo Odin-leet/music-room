@@ -5,6 +5,7 @@ import { Alert, FlatList, Image, Pressable, StyleSheet, View } from 'react-nativ
 import { ApiError } from '@/api/client';
 import { DENY_MESSAGE, eventSubtitle } from '@/events/labels';
 import { getCurrentCoords, LocationError, type Coords } from '@/events/location';
+import { OwnerPlayer } from '@/events/OwnerPlayer';
 import { useEventRealtime } from '@/events/useEventRealtime';
 import { useSession } from '@/session/SessionProvider';
 import { colors, font, radius, spacing } from '@/theme';
@@ -169,7 +170,9 @@ export default function EventQueueScreen() {
           </View>
           {error ? <Text variant="error">{error}</Text> : null}
 
-          {nowPlaying ? (
+          {event.myRole === 'owner' ? (
+            <OwnerPlayer eventId={event.id} nowPlaying={nowPlaying} queueLength={upcoming.length} onQueue={applyQueue} />
+          ) : nowPlaying ? (
             <View style={styles.nowPlaying}>
               <Text variant="muted">Now playing</Text>
               <Text numberOfLines={1}>

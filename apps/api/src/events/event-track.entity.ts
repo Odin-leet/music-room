@@ -24,6 +24,8 @@ export type TrackStatus = (typeof TRACK_STATUSES)[number];
   unique: true,
   where: `"status" = 'queued'`,
 })
+// At most one track playing per event, guaranteed by Postgres.
+@Index('UQ_event_tracks_one_playing', ['eventId'], { unique: true, where: `"status" = 'playing'` })
 // Serves the ranked queue: WHERE eventId AND status ORDER BY score DESC, suggestedAt.
 @Index('IDX_event_tracks_ranking', ['eventId', 'status', 'score', 'suggestedAt'])
 export class EventTrack {

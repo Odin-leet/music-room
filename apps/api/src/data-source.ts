@@ -7,6 +7,9 @@ import { EventMember } from './events/event-member.entity';
 import { EventTrack } from './events/event-track.entity';
 import { Event } from './events/event.entity';
 import { Vote } from './events/vote.entity';
+import { PlaylistMember } from './playlists/playlist-member.entity';
+import { PlaylistTrack } from './playlists/playlist-track.entity';
+import { Playlist } from './playlists/playlist.entity';
 import { PasswordResetCode } from './auth/password-reset-code.entity';
 import { RefreshToken } from './auth/refresh-token.entity';
 import { User } from './users/user.entity';
@@ -30,6 +33,9 @@ export default new DataSource({
     EventMember,
     EventTrack,
     Vote,
+    Playlist,
+    PlaylistMember,
+    PlaylistTrack,
   ],
   migrations: ['src/migrations/*.ts'],
 });

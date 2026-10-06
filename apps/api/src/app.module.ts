@@ -17,6 +17,7 @@ import { RefreshToken } from './auth/refresh-token.entity';
 import { EventsModule } from './events/events.module';
 import { HealthController } from './health/health.controller';
 import { MusicModule } from './music/music.module';
+import { PlaylistsModule } from './playlists/playlists.module';
 import { UsersModule } from './users/users.module';
 
 @Module({
@@ -51,6 +52,7 @@ import { UsersModule } from './users/users.module';
     AuthModule,
     MusicModule,
     EventsModule,
+    PlaylistsModule,
   ],
   controllers: [HealthController],
 })

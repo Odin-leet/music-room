@@ -154,4 +154,29 @@ export interface ClientToServerEvents {
   'event:leave': (payload: { eventId: string }, ack: (res: { ok: true }) => void) => void;
 }
 
-// Playlist shapes land here once the Playlist Editor is built.
+// ---------- Playlist Editor ----------
+
+export type PlaylistVisibility = 'public' | 'private';
+// Who may edit (add / remove / reorder): open = anyone who can see it ·
+// invited = owner + invited accounts only. Everyone who can see it can listen.
+export type PlaylistLicense = 'open' | 'invited';
+
+// Why you can't edit (or see) a playlist.
+export type EditDenyReason = 'not_member' | 'not_invited';
+export type EditPermission = { allowed: true } | { allowed: false; reason: EditDenyReason };
+
+// GET /playlists, GET /playlists/:id, POST /playlists …
+export interface PlaylistView {
+  id: string;
+  name: string;
+  description: string;
+  visibility: PlaylistVisibility;
+  license: PlaylistLicense;
+  owner: { id: string; displayName: string };
+  myRole: MemberRole | null; // null = not a member (public playlists only)
+  inviteCode: string | null; // members only
+  canEdit: EditPermission;
+  trackCount: number;
+  createdAt: string;
+  updatedAt: string;
+}

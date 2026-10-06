@@ -6,8 +6,8 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import type { EventView } from '@music-room/shared';
-import { randomInt } from 'crypto';
 import { DataSource, QueryFailedError, Repository } from 'typeorm';
+import { generateInviteCode } from '../common/invite-code';
 import { User } from '../users/user.entity';
 import type { CreateEventDto, UpdateEventDto } from './dto/event-input.dto';
 import { EventMember, type MemberRole } from './event-member.entity';
@@ -15,9 +15,6 @@ import { canParticipate, canView, type Location } from './event-policy';
 import { EventsBus } from './events-bus';
 import { Event } from './event.entity';
 
-// No 0/O or 1/I/L: codes get read aloud and typed on phones.
-const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-const CODE_LENGTH = 8; // 31^8 ≈ 850 billion combinations
 const UNIQUE_VIOLATION = '23505';
 
 const GEO_KEYS = ['geoLat', 'geoLng', 'geoRadiusM', 'startsAt', 'endsAt'] as const;
@@ -49,7 +46,7 @@ export class EventsService {
               description: dto.description ?? '',
               visibility: dto.visibility,
               license,
-              inviteCode: generateCode(),
+              inviteCode: generateInviteCode(),
               ...geo,
             }),
           );
@@ -252,10 +249,6 @@ function toView(
     participation: canParticipate(event, role, { now: new Date(), location }),
     createdAt: event.createdAt.toISOString(),
   };
-}
-
-function generateCode() {
-  return Array.from({ length: CODE_LENGTH }, () => CODE_ALPHABET[randomInt(CODE_ALPHABET.length)]).join('');
 }
 
 const isUuid = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);

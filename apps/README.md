@@ -1,8 +1,10 @@
 # apps/
 
-Two workspaces live here, generated on your own machine (not in this chat) so they get real, un-blocked npm registry access:
+The two npm workspaces of the monorepo:
 
-- **api/** — NestJS backend. Generate it once with `make scaffold-api`.
-- **mobile/** — React Native (Expo) client. Generate it once with `make scaffold-mobile`.
+- **api/** — NestJS API (auth, users, music, Track Vote events, real-time gateway). Run it with `make dev-api`.
+- **mobile/** — Expo (React Native) app. Run it with `npm run start --workspace=apps/mobile`; set its API address in `mobile/.env` (copy `mobile/.env.example`).
 
-See the root `README.md` for the full setup order and the planned module layout for each.
+Both were generated once with `make scaffold-api` / `make scaffold-mobile` and are now regular source code — don't re-run those targets.
+
+See the root [`README.md`](../README.md) for setup, configuration, features and the code layout of each app.

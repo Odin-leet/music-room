@@ -27,6 +27,11 @@ export class User {
   @Column({ type: 'varchar', nullable: true, unique: true })
   googleId: string | null;
 
+  // Facebook's app-scoped user id, set when the user logs in with Facebook.
+  @Exclude()
+  @Column({ type: 'varchar', nullable: true, unique: true })
+  facebookId: string | null;
+
   // Null until the user enters the code we emailed them.
   @Exclude()
   @Column({ type: 'timestamptz', nullable: true })

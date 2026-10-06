@@ -20,9 +20,11 @@ type Status = 'restoring' | 'signedOut' | 'signedIn';
 
 export type RegisterInput = { email: string; password: string; displayName: string };
 
+export type SocialProvider = 'google' | 'facebook';
+
 // A social login that came back with an error from our API's callback, e.g.
 // 'account_exists' (email taken, provider couldn't vouch for it) or
-// 'access_denied' (user declined on Google's page).
+// 'access_denied' (user declined on the provider's page).
 export class SocialLoginError extends Error {
   constructor(readonly code: string) {
     super(code);
@@ -37,7 +39,7 @@ type Session = {
   authedApi: <T>(path: string, options?: Omit<ApiOptions, 'token'>) => Promise<T>;
   signIn: (email: string, password: string) => Promise<void>;
   // Resolves false if the user closed the browser; throws SocialLoginError otherwise.
-  signInWithGoogle: () => Promise<boolean>;
+  signInWithProvider: (provider: SocialProvider) => Promise<boolean>;
   register: (input: RegisterInput) => Promise<void>;
   signOut: () => Promise<void>;
 };
@@ -140,15 +142,15 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     [startSession],
   );
 
-  // Browser route: our API runs the Google (OpenID Connect) flow and sends the
-  // browser back to the app with a single-use code, which only this app can
-  // exchange — it holds the PKCE verifier.
-  const signInWithGoogle = useCallback(async () => {
+  // Browser route: our API runs the provider's flow (Google: OpenID Connect,
+  // Facebook: OAuth 2.0) and sends the browser back to the app with a
+  // single-use code, which only this app can exchange — it holds the PKCE verifier.
+  const signInWithProvider = useCallback(async (provider: SocialProvider) => {
     const { verifier, challenge } = await createPkcePair();
     // Expo Go: exp://…/--/oauth · our own builds: musicroom://oauth
     const returnUrl = Linking.createURL('oauth');
     const startUrl =
-      `${API_URL}/auth/google/start` +
+      `${API_URL}/auth/${provider}/start` +
       `?redirect=${encodeURIComponent(returnUrl)}&code_challenge=${challenge}`;
 
     const result = await WebBrowser.openAuthSessionAsync(startUrl, returnUrl);
@@ -187,8 +189,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [endSession]);
 
   const value = useMemo<Session>(
-    () => ({ status, authedApi, signIn, signInWithGoogle, register, signOut }),
-    [status, authedApi, signIn, signInWithGoogle, register, signOut],
+    () => ({ status, authedApi, signIn, signInWithProvider, register, signOut }),
+    [status, authedApi, signIn, signInWithProvider, register, signOut],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

@@ -3,6 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { createHash, randomBytes, timingSafeEqual } from 'crypto';
 import { DataSource, QueryFailedError, Repository } from 'typeorm';
 import { User } from '../users/user.entity';
+import { EmailVerificationService } from './email-verification.service';
+import type { FacebookProfile } from './facebook-oauth.service';
 import type { GoogleProfile } from './google-oauth.service';
 import { OAuthLoginCode } from './oauth-login-code.entity';
 
@@ -15,6 +17,10 @@ const UNIQUE_VIOLATION = '23505';
 // the provider account take over ours.
 export class AccountExistsError extends Error {}
 
+// The provider gave us no email (e.g. a phone-only Facebook account). Every
+// Music Room account needs one (verification, password reset, uniqueness).
+export class EmailRequiredError extends Error {}
+
 const sha256 = (value: string) => createHash('sha256').update(value).digest();
 
 @Injectable()
@@ -25,6 +31,7 @@ export class OAuthLoginService {
     @InjectRepository(OAuthLoginCode)
     private readonly codes: Repository<OAuthLoginCode>,
     private readonly dataSource: DataSource,
+    private readonly emailVerification: EmailVerificationService,
   ) {}
 
   // Who is this Google user in our app? In order:
@@ -46,24 +53,64 @@ export class OAuthLoginService {
       return this.users.findOneByOrFail({ id: byEmail.id });
     }
 
+    const user = await this.createUser(
+      {
+        email: profile.email,
+        displayName: profile.name,
+        googleId: profile.googleId,
+        emailVerifiedAt: profile.emailVerified ? new Date() : null,
+      },
+      { googleId: profile.googleId },
+    );
+    // Rare: Google said the email isn't verified. Verify it ourselves.
+    if (!user.emailVerifiedAt) await this.emailVerification.sendInitialCode(user);
+    return user;
+  }
+
+  // Same idea for Facebook, but Facebook doesn't tell us whether the email is
+  // verified, so we never trust it to prove ownership:
+  // 1. already linked (facebookId) -> that user
+  // 2. same email exists -> refuse (no automatic linking through Facebook)
+  // 3. otherwise -> new account, email NOT verified: we send our own code
+  async findOrCreateFromFacebook(profile: FacebookProfile): Promise<User> {
+    const linked = await this.users.findOneBy({ facebookId: profile.facebookId });
+    if (linked) return linked;
+
+    if (!profile.email) throw new EmailRequiredError();
+    if (await this.users.existsBy({ email: profile.email })) throw new AccountExistsError();
+
+    const user = await this.createUser(
+      {
+        email: profile.email,
+        displayName: profile.name,
+        facebookId: profile.facebookId,
+        emailVerifiedAt: null,
+      },
+      { facebookId: profile.facebookId },
+    );
+    await this.emailVerification.sendInitialCode(user);
+    return user;
+  }
+
+  // Creates a password-less social account. If two callbacks for the same
+  // new user race, the unique constraints let only one insert win; the other
+  // finds the row it created.
+  private async createUser(
+    data: Pick<User, 'email' | 'displayName' | 'emailVerifiedAt'> &
+      Partial<Pick<User, 'googleId' | 'facebookId'>>,
+    providerKey: { googleId: string } | { facebookId: string },
+  ): Promise<User> {
     try {
-      return await this.users.save(
-        this.users.create({
-          email: profile.email,
-          displayName: profile.name,
-          googleId: profile.googleId,
-          passwordHash: null,
-          emailVerifiedAt: profile.emailVerified ? new Date() : null,
-        }),
-      );
+      return await this.users.save(this.users.create({ ...data, passwordHash: null }));
     } catch (err) {
-      // Two callbacks for the same new user raced; the other one created it.
       if (
         err instanceof QueryFailedError &&
         (err.driverError as { code?: string }).code === UNIQUE_VIOLATION
       ) {
-        const created = await this.users.findOneBy({ googleId: profile.googleId });
+        const created = await this.users.findOneBy(providerKey);
         if (created) return created;
+        // The email was taken in the meantime by another account.
+        throw new AccountExistsError();
       }
       throw err;
     }

@@ -10,14 +10,16 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { EmailVerificationCode } from './email-verification-code.entity';
 import { EmailVerificationService } from './email-verification.service';
-import { GoogleOAuthController } from './google-oauth.controller';
+import { FacebookOAuthService } from './facebook-oauth.service';
 import { GoogleOAuthService } from './google-oauth.service';
 import { JwtStrategy } from './jwt.strategy';
 import { OAuthLoginCode } from './oauth-login-code.entity';
 import { OAuthLoginService } from './oauth-login.service';
+import { OAuthStateService } from './oauth-state.service';
 import { PasswordResetCode } from './password-reset-code.entity';
 import { PasswordResetService } from './password-reset.service';
 import { RefreshToken } from './refresh-token.entity';
+import { SocialAuthController } from './social-auth.controller';
 
 @Module({
   imports: [
@@ -45,12 +47,14 @@ import { RefreshToken } from './refresh-token.entity';
       }),
     }),
   ],
-  controllers: [AuthController, GoogleOAuthController],
+  controllers: [AuthController, SocialAuthController],
   providers: [
     AuthService,
     EmailVerificationService,
     PasswordResetService,
+    OAuthStateService,
     GoogleOAuthService,
+    FacebookOAuthService,
     OAuthLoginService,
     JwtStrategy,
   ],

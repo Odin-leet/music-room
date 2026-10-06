@@ -3,6 +3,10 @@ import { resolve } from 'path';
 import { DataSource } from 'typeorm';
 import { EmailVerificationCode } from './auth/email-verification-code.entity';
 import { OAuthLoginCode } from './auth/oauth-login-code.entity';
+import { EventMember } from './events/event-member.entity';
+import { EventTrack } from './events/event-track.entity';
+import { Event } from './events/event.entity';
+import { Vote } from './events/vote.entity';
 import { PasswordResetCode } from './auth/password-reset-code.entity';
 import { RefreshToken } from './auth/refresh-token.entity';
 import { User } from './users/user.entity';
@@ -16,6 +20,16 @@ export default new DataSource({
   username: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
-  entities: [User, RefreshToken, EmailVerificationCode, PasswordResetCode, OAuthLoginCode],
+  entities: [
+    User,
+    RefreshToken,
+    EmailVerificationCode,
+    PasswordResetCode,
+    OAuthLoginCode,
+    Event,
+    EventMember,
+    EventTrack,
+    Vote,
+  ],
   migrations: ['src/migrations/*.ts'],
 });

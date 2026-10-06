@@ -180,3 +180,18 @@ export interface PlaylistView {
   createdAt: string;
   updatedAt: string;
 }
+
+// One track of a playlist. Sort by `position` with plain code-unit
+// comparison (a < b), NOT localeCompare: "Zz" must come before "a0".
+export interface PlaylistTrackView extends TrackSummary {
+  id: string; // the playlist entry's id (use it to move / remove)
+  position: string; // fractional key
+  addedBy: { id: string; displayName: string } | null;
+  addedAt: string; // ISO date
+}
+
+// GET /playlists/:id/tracks
+export interface PlaylistTracksView {
+  playlistId: string;
+  tracks: PlaylistTrackView[]; // already in order
+}

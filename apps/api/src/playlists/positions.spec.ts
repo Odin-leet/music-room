@@ -1,4 +1,11 @@
-import { byPosition, keyBetween, keysBetween, MAX_POSITION_LENGTH, REBALANCE_AT } from './positions';
+import {
+  byPosition,
+  keyBetween,
+  keysBetween,
+  MAX_POSITION_LENGTH,
+  randomKeyBetween,
+  REBALANCE_AT,
+} from './positions';
 
 describe('fractional positions', () => {
   it('starts an empty playlist', () => {
@@ -32,6 +39,23 @@ describe('fractional positions', () => {
   it('sorts by plain code units, which is what COLLATE "C" does in Postgres', () => {
     const before = keyBetween(null, 'a0'); // e.g. "Zz": upper-case Z sorts before lower-case a
     expect(['a1', 'a0', before].sort(byPosition)).toEqual([before, 'a0', 'a1']);
+  });
+
+  it('randomKeyBetween stays strictly between the neighbours and varies', () => {
+    const keys = new Set<string>();
+    for (let i = 0; i < 100; i++) {
+      const k = randomKeyBetween('a0', 'a1');
+      expect(byPosition('a0', k)).toBe(-1);
+      expect(byPosition(k, 'a1')).toBe(-1);
+      keys.add(k);
+    }
+    // 2^4 = 16 possible leaves: 100 draws should hit many of them.
+    expect(keys.size).toBeGreaterThan(8);
+  });
+
+  it('randomKeyBetween works at the ends of the list', () => {
+    expect(byPosition(randomKeyBetween(null, 'a0'), 'a0')).toBe(-1);
+    expect(byPosition('a5', randomKeyBetween('a5', null))).toBe(-1);
   });
 
   it('spreads n keys evenly for a rebalance', () => {

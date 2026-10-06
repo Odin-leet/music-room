@@ -28,6 +28,23 @@ export function keyBetween(before: string | null, after: string | null): string 
   return generateKeyBetween(before, after);
 }
 
+// A key strictly between the neighbours, but at a random spot in the gap
+// rather than the middle. Used when retrying after a collision: N people
+// who read the same neighbours at the same instant all compute the same
+// middle key, so on retry each picks a different random spot instead.
+// (Random walk: up to `depth` times, keep the left or right half at random.)
+export function randomKeyBetween(before: string | null, after: string | null, depth = 4): string {
+  let lo = before;
+  let hi = after;
+  let key = keyBetween(lo, hi);
+  for (let i = 0; i < depth; i++) {
+    if (Math.random() < 0.5) hi = key;
+    else lo = key;
+    key = keyBetween(lo, hi);
+  }
+  return key;
+}
+
 // n evenly spread keys (used if a playlist ever needs rebalancing).
 export function keysBetween(before: string | null, after: string | null, n: number): string[] {
   return generateNKeysBetween(before, after, n);

@@ -1,4 +1,4 @@
-# Realtime API — Track Vote
+# Realtime API — Track Vote and Playlist Editor
 
 Live updates for Track Vote events, over **Socket.IO 4** (namespace **`/events`**). The socket only **receives**: every change (suggest, vote, un-vote, edit an event) goes through the REST API, and the server pushes the result to everyone watching.
 
@@ -90,3 +90,70 @@ npm run test:realtime --workspace=apps/api   # needs the API running
 ```
 
 Covers: refused without/with a bad token; join rules; one vote reaching every listener; burst batching; a socket removed when the event becomes private (and unable to re-join); deletion.
+
+---
+
+# Playlist Editor — namespace `/playlists`
+
+Same connection rules as `/events`: a valid access token in `auth.token`, otherwise `connect_error: unauthorized`. The server only **sends**. Every change goes through REST (`POST`/`PATCH`/`DELETE /playlists/:id/tracks…`).
+
+```ts
+import { io, Socket } from 'socket.io-client';
+import type { PlaylistClientToServerEvents, PlaylistServerToClientEvents } from '@music-room/shared';
+
+const socket: Socket<PlaylistServerToClientEvents, PlaylistClientToServerEvents> =
+  io(`${API_URL}/playlists`, { auth: { token: accessToken }, transports: ['websocket'] });
+```
+
+## Client → server
+
+| Event | Payload | Ack |
+|---|---|---|
+| `playlist:join` | `{ playlistId }` | `{ ok: true }` or `{ ok: false, error: 'Playlist not found' }`. This is the same rule as `GET /playlists/:id`: a private playlist's room is for members only |
+| `playlist:leave` | `{ playlistId }` | `{ ok: true }` |
+
+**Join first, then load.** Call `playlist:join`, wait for the ack, then call `GET /playlists/:id/tracks`. A change that happens in between is then both in the list and in a message, which is harmless (see "Applying the messages"). The other order could miss a change entirely. After a reconnect, do the same again: join, then refetch.
+
+## Server → client: small change messages
+
+Unlike Track Vote, which resends the whole ranked queue, the Playlist Editor sends **only what changed**. This works because a position is a fractional key, and the key is *absolute*: "track X is now at `a0V`" is correct on its own, whatever else changed meanwhile. No other track's position changes when one moves.
+
+| Event | Payload | Apply it as |
+|---|---|---|
+| `track:added` | `{ playlistId, track: PlaylistTrackView }` | upsert by `track.id` |
+| `track:moved` | `{ playlistId, trackId, position }` | set that track's `position` (ignore an unknown id) |
+| `track:removed` | `{ playlistId, trackId }` | drop it (ignore an unknown id) |
+| `playlist:updated` | `{ playlistId }` | refetch `GET /playlists/:id`: the name, license or `canEdit` may have changed |
+| `playlist:deleted` | `{ playlistId }` | close the screen |
+| `playlist:access-lost` | `{ playlistId }` | you were removed from the room (for example, the playlist became private) |
+
+Then **sort by `position` with plain comparison** (`a < b`), never `localeCompare`. `"Zz"` must come before `"a0"`, which is the byte order the database uses (`COLLATE "C"`).
+
+```ts
+const byPosition = (a: PlaylistTrackView, b: PlaylistTrackView) =>
+  a.position < b.position ? -1 : a.position > b.position ? 1 : 0;
+```
+
+Your own changes come back to you too. Upserting by id makes that harmless, and an optimistic update in the app is confirmed rather than duplicated.
+
+**Rules followed for every message:**
+- A message is sent only **after** its change has committed.
+- Two people deleting the same track at the same moment produce **one** `track:removed`, sent by whichever request actually deleted it.
+- There is no batching. Each message is a few hundred bytes, and every one is meaningful (unlike votes, where only the final score matters).
+
+## Tests
+
+```bash
+npm run test:playlist-race --workspace=apps/api       # concurrency of the REST routes
+npm run test:playlist-realtime --workspace=apps/api   # this namespace
+```
+
+`test:playlist-realtime` covers:
+- refused tokens;
+- the join rules;
+- the shape of each message;
+- 2 simultaneous deletes producing 1 message;
+- **30 concurrent adds, moves and removes from 2 people, after which 3 listeners' lists, each built only from the messages, are identical to `GET /tracks`**;
+- an invite sending `playlist:updated`;
+- going private removing a non-member (who then receives nothing more);
+- deletion.

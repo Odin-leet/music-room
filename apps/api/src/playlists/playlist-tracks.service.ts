@@ -12,6 +12,7 @@ import { DeezerService } from '../music/deezer.service';
 import type { User } from '../users/user.entity';
 import { canEdit } from './playlist-policy';
 import { PlaylistTrack } from './playlist-track.entity';
+import { PlaylistsBus } from './playlists-bus';
 import { PlaylistsService } from './playlists.service';
 import { keyBetween, randomKeyBetween } from './positions';
 
@@ -36,6 +37,7 @@ export class PlaylistTracksService {
   constructor(
     private readonly playlists: PlaylistsService,
     private readonly deezer: DeezerService,
+    private readonly bus: PlaylistsBus,
     @InjectRepository(PlaylistTrack) private readonly tracks: Repository<PlaylistTrack>,
   ) {}
 
@@ -71,7 +73,9 @@ export class PlaylistTracksService {
         }),
       );
     });
-    return toView(await this.tracks.findOneOrFail({ where: { id: saved.id }, relations: { addedBy: true } }));
+    const track = toView(await this.tracks.findOneOrFail({ where: { id: saved.id }, relations: { addedBy: true } }));
+    this.bus.publish('track.added', { playlistId, track });
+    return track;
   }
 
   async move(playlistId: string, trackId: string, userId: string, afterId: string | null) {
@@ -79,12 +83,14 @@ export class PlaylistTracksService {
     if (afterId === trackId) throw new BadRequestException('A track cannot be placed after itself');
     await this.requireTrack(playlistId, trackId);
 
-    await this.withRetry(async (attempt) => {
-      const position = await this.positionFor(playlistId, afterId, trackId, attempt);
-      const { affected } = await this.tracks.update({ id: trackId, playlistId }, { position });
+    const position = await this.withRetry(async (attempt) => {
+      const key = await this.positionFor(playlistId, afterId, trackId, attempt);
+      const { affected } = await this.tracks.update({ id: trackId, playlistId }, { position: key });
       // Removed by someone else between our check and this update.
       if (!affected) throw new NotFoundException('Track not found in this playlist');
+      return key;
     });
+    this.bus.publish('track.moved', { playlistId, trackId, position });
     return toView(await this.tracks.findOneOrFail({ where: { id: trackId }, relations: { addedBy: true } }));
   }
 
@@ -92,7 +98,9 @@ export class PlaylistTracksService {
   async remove(playlistId: string, trackId: string, userId: string) {
     await this.requireEdit(playlistId, userId);
     if (!isUuid(trackId)) return;
-    await this.tracks.delete({ id: trackId, playlistId });
+    const { affected } = await this.tracks.delete({ id: trackId, playlistId });
+    // Only the request that actually removed it announces it.
+    if (affected) this.bus.publish('track.removed', { playlistId, trackId });
   }
 
   // ---------- helpers ----------

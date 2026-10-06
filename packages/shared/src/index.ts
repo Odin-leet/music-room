@@ -195,3 +195,26 @@ export interface PlaylistTracksView {
   playlistId: string;
   tracks: PlaylistTrackView[]; // already in order
 }
+
+// ---------- Playlist Editor realtime (Socket.IO, namespace /playlists) ----------
+// Full reference: docs/realtime.md. Small change messages: apply each one
+// to your local list (upsert / set position / drop), then sort by position.
+// Join the room FIRST, then GET /playlists/:id/tracks, so no change is missed.
+
+export interface PlaylistServerToClientEvents {
+  // Also sent to the person who made the change: upsert by id.
+  'track:added': (payload: { playlistId: string; track: PlaylistTrackView }) => void;
+  // The track's new absolute position. Ignore it if you don't have the track.
+  'track:moved': (payload: { playlistId: string; trackId: string; position: string }) => void;
+  'track:removed': (payload: { playlistId: string; trackId: string }) => void;
+  // Details or memberships changed (may change canEdit): refetch GET /playlists/:id.
+  'playlist:updated': (payload: { playlistId: string }) => void;
+  'playlist:deleted': (payload: { playlistId: string }) => void;
+  // You were removed from the room (e.g. the playlist became private).
+  'playlist:access-lost': (payload: { playlistId: string }) => void;
+}
+
+export interface PlaylistClientToServerEvents {
+  'playlist:join': (payload: { playlistId: string }, ack: (res: JoinAck) => void) => void;
+  'playlist:leave': (payload: { playlistId: string }, ack: (res: { ok: true }) => void) => void;
+}

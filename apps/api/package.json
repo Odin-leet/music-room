@@ -25,6 +25,7 @@
     "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/data-source.ts",
     "test:race": "node test/race/vote-race.mjs",
     "test:realtime": "node test/realtime/realtime.mjs",
+    "test:playlist-realtime": "node test/realtime/playlist-realtime.mjs",
     "docs:openapi": "node scripts/export-openapi.mjs",
     "test:playlist-race": "node test/race/playlist-race.mjs"
   },

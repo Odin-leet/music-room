@@ -10,6 +10,7 @@ import { PlaylistMember } from './playlist-member.entity';
 import { canEdit, canViewPlaylist } from './playlist-policy';
 import { PlaylistTrack } from './playlist-track.entity';
 import { Playlist } from './playlist.entity';
+import { PlaylistsBus } from './playlists-bus';
 
 const UNIQUE_VIOLATION = '23505';
 
@@ -25,6 +26,7 @@ export class PlaylistsService {
     @InjectRepository(PlaylistTrack) private readonly tracks: Repository<PlaylistTrack>,
     @InjectRepository(User) private readonly users: Repository<User>,
     private readonly dataSource: DataSource,
+    private readonly bus: PlaylistsBus,
   ) {}
 
   async create(userId: string, dto: CreatePlaylistDto): Promise<PlaylistView> {
@@ -84,12 +86,14 @@ export class PlaylistsService {
       ...(dto.visibility !== undefined && { visibility: dto.visibility }),
       ...(dto.license !== undefined && { license: dto.license }),
     });
+    this.bus.publish('playlist.changed', { playlistId: playlist.id });
     return this.view(playlist.id, userId);
   }
 
   async remove(playlistId: string, userId: string) {
     const { playlist } = await this.loadAsOwner(playlistId, userId);
     await this.playlists.delete(playlist.id); // members and tracks cascade
+    this.bus.publish('playlist.deleted', { playlistId: playlist.id });
   }
 
   async joinPublic(playlistId: string, userId: string): Promise<PlaylistView> {
@@ -117,6 +121,8 @@ export class PlaylistsService {
       .values({ playlistId: playlist.id, userId: invitee.id, role: 'invited' })
       .orUpdate(['role'], ['playlistId', 'userId'])
       .execute();
+    // The invitee may now edit (license 'invited'): their app should refetch.
+    this.bus.publish('playlist.changed', { playlistId: playlist.id });
     return { invited: { id: invitee.id, displayName: invitee.displayName } };
   }
 

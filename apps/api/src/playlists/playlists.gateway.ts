@@ -15,6 +15,7 @@ import type {
 } from '@music-room/shared';
 import type { Namespace, Socket } from 'socket.io';
 import { socketAuth } from '../auth/socket-auth';
+import { logSocketAction } from '../common/action-log';
 import { PlaylistsBus } from './playlists-bus';
 import { PlaylistsService } from './playlists.service';
 
@@ -60,8 +61,10 @@ export class PlaylistsGateway implements OnGatewayInit, OnModuleInit {
   async join(@ConnectedSocket() socket: PlaylistSocket, @MessageBody() body: { playlistId?: unknown }): Promise<JoinAck> {
     const playlistId = typeof body?.playlistId === 'string' ? body.playlistId : '';
     if (!(await this.playlists.canUserView(playlistId, socket.data.userId))) {
+      logSocketAction(socket, 'playlist:join refused', { playlistId });
       return { ok: false, error: 'Playlist not found' };
     }
+    logSocketAction(socket, 'playlist:join', { playlistId });
     await socket.join(room(playlistId));
     return { ok: true };
   }

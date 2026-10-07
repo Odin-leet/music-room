@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Friendship } from './friends/friendship.entity';
@@ -18,6 +18,7 @@ import { RefreshToken } from './auth/refresh-token.entity';
 import { EventsModule } from './events/events.module';
 import { FriendsModule } from './friends/friends.module';
 import { MeModule } from './me/me.module';
+import { ActionLogMiddleware } from './common/action-log';
 import { HealthController } from './health/health.controller';
 import { MusicModule } from './music/music.module';
 import { PlaylistsModule } from './playlists/playlists.module';
@@ -62,4 +63,9 @@ import { UsersModule } from './users/users.module';
   ],
   controllers: [HealthController],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  // One structured log line per HTTP action (brief V.6).
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(ActionLogMiddleware).forRoutes('*path');
+  }
+}

@@ -1,4 +1,5 @@
 import { API_URL } from '@/config';
+import { CLIENT_HEADERS } from './clientInfo';
 
 const TIMEOUT_MS = 10_000;
 
@@ -35,6 +36,7 @@ export async function api<T>(path: string, { method = 'GET', body, token }: ApiO
       signal: controller.signal,
       headers: {
         Accept: 'application/json',
+        ...CLIENT_HEADERS,
         ...(body !== undefined && { 'Content-Type': 'application/json' }),
         ...(token && { Authorization: `Bearer ${token}` }),
       },

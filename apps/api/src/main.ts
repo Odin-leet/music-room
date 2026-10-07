@@ -40,7 +40,8 @@ async function bootstrap() {
     swaggerOptions: { persistAuthorization: true },
   });
 
-  await app.listen(3000);
-  console.log('API is running on http://localhost:3000');
+  // PORT lets a second instance run next to the dev one (e.g. load tests).
+  await app.listen(Number(process.env.PORT ?? 3000));
+  console.log(`API is running on http://localhost:${process.env.PORT ?? 3000}`);
 }
 void bootstrap();

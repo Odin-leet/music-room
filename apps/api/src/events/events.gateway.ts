@@ -11,6 +11,7 @@ import {
 import type { ClientToServerEvents, JoinAck, ServerToClientEvents } from '@music-room/shared';
 import type { Namespace, Socket } from 'socket.io';
 import { socketAuth } from '../auth/socket-auth';
+import { logSocketAction } from '../common/action-log';
 import { EventsBus } from './events-bus';
 import { EventsService } from './events.service';
 import { QueueService } from './queue.service';
@@ -63,8 +64,10 @@ export class EventsGateway implements OnGatewayInit, OnModuleInit {
     const eventId = typeof body?.eventId === 'string' ? body.eventId : '';
     // Same rule (and same "not found" answer) as GET /events/:id.
     if (!(await this.events.canUserView(eventId, socket.data.userId))) {
+      logSocketAction(socket, 'event:join refused', { eventId });
       return { ok: false, error: 'Event not found' };
     }
+    logSocketAction(socket, 'event:join', { eventId });
     await socket.join(room(eventId));
     return { ok: true };
   }

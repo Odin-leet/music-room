@@ -1,6 +1,7 @@
 import type { ClientToServerEvents, QueueBroadcast, ServerToClientEvents } from '@music-room/shared';
 import { useEffect, useRef, useState } from 'react';
 import { io, type Socket } from 'socket.io-client';
+import { CLIENT_INFO } from '@/api/clientInfo';
 import { API_URL } from '@/config';
 import { useSession } from '@/session/SessionProvider';
 
@@ -30,7 +31,7 @@ export function useEventRealtime(eventId: string, handlers: Handlers): RealtimeS
   useEffect(() => {
     const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(`${API_URL}/events`, {
       // A function: called on every (re)connect, so it always sends the latest token.
-      auth: (cb) => cb({ token: getAccessToken() }),
+      auth: (cb) => cb({ token: getAccessToken(), client: CLIENT_INFO }),
       transports: ['websocket'],
     });
 

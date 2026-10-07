@@ -44,6 +44,7 @@ function AppNavigator() {
         <Stack.Screen name="index" />
         <Stack.Screen name="events" />
         <Stack.Screen name="playlists" />
+        <Stack.Screen name="profile" />
       </Stack.Protected>
       <Stack.Protected guard={!verified}>
         <Stack.Screen name="verify-email" />

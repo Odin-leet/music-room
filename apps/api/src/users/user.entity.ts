@@ -51,6 +51,17 @@ export class User {
     return this.emailVerifiedAt != null;
   }
 
+  // ---------- Login lockout (V.6) ----------
+  // Wrong passwords in a row; reset on success and when a lock starts.
+  @Exclude()
+  @Column({ type: 'int', default: 0 })
+  failedLoginCount: number;
+
+  // While in the future, login is refused even with the right password.
+  @Exclude()
+  @Column({ type: 'timestamptz', nullable: true })
+  lockedUntil: Date | null;
+
   // ---------- Profile (V.1) ----------
   // One row, fields grouped by who may see them; profileFor() (profile-policy.ts)
   // decides what each viewer gets. @Exclude: GET /users/me keeps its shape.

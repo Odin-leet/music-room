@@ -15,6 +15,7 @@ import { TokenPairDto } from './dto/auth-responses.dto';
 import { CurrentUserDto } from '../users/dto/user-responses.dto';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { AuthService } from './auth.service';
+import { AuthAttempt } from '../security/rate-limit';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { OAuthExchangeDto } from './dto/oauth-exchange.dto';
@@ -42,6 +43,7 @@ export class AuthController {
   @ApiCreatedResponse({ type: CurrentUserDto })
   @ApiBadRequestResponse({ description: 'Validation failed (one message per field)' })
   @ApiConflictResponse({ description: 'Email is already registered' })
+  @AuthAttempt()
   @Post('register')
   register(@Body() body: RegisterDto) {
     return this.authService.register(body);
@@ -51,6 +53,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Log in with email + password' })
   @ApiOkResponse({ type: TokenPairDto })
   @ApiUnauthorizedResponse({ description: 'Invalid email or password (same message and timing for every failure)' })
+  @AuthAttempt()
   @Post('login')
   @HttpCode(HttpStatus.OK)
   login(@Body() body: LoginDto) {
@@ -80,6 +83,7 @@ export class AuthController {
   @ApiNoContentResponse({ description: 'Verified (also if already verified)' })
   @ApiBadRequestResponse({ description: 'Invalid code, expired code, or too many attempts' })
   @ApiUnauthorizedResponse({ description: 'Missing, invalid or expired access token' })
+  @AuthAttempt()
   @Post('verify-email')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -93,6 +97,7 @@ export class AuthController {
   @ApiBadRequestResponse({ description: 'Email is already verified' })
   @ApiTooManyRequestsResponse({ description: 'Wait before requesting another code (60 s)' })
   @ApiUnauthorizedResponse({ description: 'Missing, invalid or expired access token' })
+  @AuthAttempt()
   @Post('resend-verification')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -103,6 +108,7 @@ export class AuthController {
   // Always 204, whether or not the email has an account (no account discovery).
   @ApiOperation({ summary: 'Email a password-reset code if the account exists (always 204: never reveals whether it does)' })
   @ApiNoContentResponse()
+  @AuthAttempt()
   @Post('forgot-password')
   @HttpCode(HttpStatus.NO_CONTENT)
   forgotPassword(@Body() body: ForgotPasswordDto) {
@@ -113,6 +119,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Set a new password with the emailed code; ends every session' })
   @ApiNoContentResponse()
   @ApiBadRequestResponse({ description: 'Invalid or expired code (one message for every failure)' })
+  @AuthAttempt()
   @Post('reset-password')
   @HttpCode(HttpStatus.NO_CONTENT)
   async resetPassword(@Body() body: ResetPasswordDto) {
@@ -124,6 +131,7 @@ export class AuthController {
   @ApiOperation({ summary: 'End of a social login: trade the single-use code from the return link + your PKCE verifier for tokens' })
   @ApiOkResponse({ type: TokenPairDto })
   @ApiBadRequestResponse({ description: 'Invalid, expired or already used code, or wrong verifier' })
+  @AuthAttempt()
   @Post('oauth/exchange')
   @HttpCode(HttpStatus.OK)
   async oauthExchange(@Body() body: OAuthExchangeDto) {

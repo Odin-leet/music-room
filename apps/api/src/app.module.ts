@@ -18,6 +18,7 @@ import { RefreshToken } from './auth/refresh-token.entity';
 import { EventsModule } from './events/events.module';
 import { FriendsModule } from './friends/friends.module';
 import { MeModule } from './me/me.module';
+import { SecurityModule } from './security/security.module';
 import { ActionLogMiddleware } from './common/action-log';
 import { HealthController } from './health/health.controller';
 import { MusicModule } from './music/music.module';
@@ -60,6 +61,7 @@ import { UsersModule } from './users/users.module';
     PlaylistsModule,
     FriendsModule,
     MeModule,
+    SecurityModule,
   ],
   controllers: [HealthController],
 })

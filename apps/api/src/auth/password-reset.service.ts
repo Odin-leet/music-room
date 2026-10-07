@@ -60,6 +60,9 @@ export class PasswordResetService {
         passwordHash,
         // The code arrived by email, so the user clearly owns the address.
         emailVerifiedAt: user.emailVerifiedAt ?? new Date(),
+        // Proving you own the email also lifts a login lockout.
+        failedLoginCount: 0,
+        lockedUntil: null,
       });
       await tx.delete(PasswordResetCode, { userId: user.id });
       // Whoever knew the old password may be logged in somewhere: end every session.

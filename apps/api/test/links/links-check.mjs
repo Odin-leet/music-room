@@ -41,8 +41,12 @@ async function call(method, path, { token, body, redirect } = {}) {
 }
 
 async function login(email, password = PASSWORD, displayName = 'Racer') {
-  await call('POST', '/auth/register', { body: { email, password, displayName } });
-  const r = await call('POST', '/auth/login', { body: { email, password } });
+  // Log in first; register only if needed (auth routes are rate-limited).
+  let r = await call('POST', '/auth/login', { body: { email, password } });
+  if (r.status !== 200) {
+    await call('POST', '/auth/register', { body: { email, password, displayName } });
+    r = await call('POST', '/auth/login', { body: { email, password } });
+  }
   if (r.status !== 200) throw new Error(`login ${email}: ${r.status}`);
   const me = await call('GET', '/users/me', { token: r.data.accessToken });
   return { token: r.data.accessToken, id: me.data.id };

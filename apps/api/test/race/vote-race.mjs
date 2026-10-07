@@ -36,8 +36,12 @@ async function call(method, path, { token, body } = {}) {
 // Register once (409 afterwards is fine), then log in.
 async function userToken(i) {
   const email = `race.user${i}@example.com`;
-  await call('POST', '/auth/register', { body: { email, password: PASSWORD, displayName: `Racer ${i}` } });
-  const login = await call('POST', '/auth/login', { body: { email, password: PASSWORD } });
+  // Log in first; register only if needed (auth routes are rate-limited).
+  let login = await call('POST', '/auth/login', { body: { email, password: PASSWORD } });
+  if (login.status !== 200) {
+    await call('POST', '/auth/register', { body: { email, password: PASSWORD, displayName: `Racer ${i}` } });
+    login = await call('POST', '/auth/login', { body: { email, password: PASSWORD } });
+  }
   if (login.status !== 200) throw new Error(`login failed for ${email}: ${login.status} ${JSON.stringify(login.data)}`);
   return login.data.accessToken;
 }

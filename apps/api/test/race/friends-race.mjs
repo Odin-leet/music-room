@@ -27,8 +27,12 @@ async function call(method, path, { token, body } = {}) {
 
 async function user(i) {
   const email = `race.user${i}@example.com`;
-  await call('POST', '/auth/register', { body: { email, password: PASSWORD, displayName: `Racer ${i}` } });
-  const login = await call('POST', '/auth/login', { body: { email, password: PASSWORD } });
+  // Log in first; register only if needed (auth routes are rate-limited).
+  let login = await call('POST', '/auth/login', { body: { email, password: PASSWORD } });
+  if (login.status !== 200) {
+    await call('POST', '/auth/register', { body: { email, password: PASSWORD, displayName: `Racer ${i}` } });
+    login = await call('POST', '/auth/login', { body: { email, password: PASSWORD } });
+  }
   if (login.status !== 200) throw new Error(`login ${email}: ${login.status}`);
   const token = login.data.accessToken;
   const me = await call('GET', '/users/me', { token });

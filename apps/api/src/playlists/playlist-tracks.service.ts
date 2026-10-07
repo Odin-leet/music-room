@@ -9,7 +9,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import type { PlaylistTrackView, PlaylistTracksView } from '@music-room/shared';
 import { QueryFailedError, Repository } from 'typeorm';
 import { DeezerService } from '../music/deezer.service';
-import type { User } from '../users/user.entity';
+import { User } from '../users/user.entity';
 import { canEdit } from './playlist-policy';
 import { PlaylistTrack } from './playlist-track.entity';
 import { PlaylistsBus } from './playlists-bus';
@@ -39,6 +39,7 @@ export class PlaylistTracksService {
     private readonly deezer: DeezerService,
     private readonly bus: PlaylistsBus,
     @InjectRepository(PlaylistTrack) private readonly tracks: Repository<PlaylistTrack>,
+    @InjectRepository(User) private readonly users: Repository<User>,
   ) {}
 
   async list(playlistId: string, userId: string): Promise<PlaylistTracksView> {
@@ -53,7 +54,7 @@ export class PlaylistTracksService {
 
   async add(playlistId: string, userId: string, providerTrackId: string, afterId: Placement) {
     await this.requireEdit(playlistId, userId);
-    const t = await this.deezer.track(providerTrackId);
+    const [t, me] = await Promise.all([this.deezer.track(providerTrackId), this.users.findOneByOrFail({ id: userId })]);
 
     const saved = await this.withRetry(async (attempt) => {
       const position = await this.positionFor(playlistId, afterId, null, attempt);
@@ -73,7 +74,11 @@ export class PlaylistTracksService {
         }),
       );
     });
-    const track = toView(await this.tracks.findOneOrFail({ where: { id: saved.id }, relations: { addedBy: true } }));
+    // Built from what we just wrote, not re-read: someone could already
+    // have removed it (another phone sees it in GET /tracks), and a re-read
+    // would then fail with a 500.
+    saved.addedBy = me;
+    const track = toView(saved);
     this.bus.publish('track.added', { playlistId, track });
     return track;
   }
@@ -81,7 +86,7 @@ export class PlaylistTracksService {
   async move(playlistId: string, trackId: string, userId: string, afterId: string | null) {
     await this.requireEdit(playlistId, userId);
     if (afterId === trackId) throw new BadRequestException('A track cannot be placed after itself');
-    await this.requireTrack(playlistId, trackId);
+    const track = await this.requireTrack(playlistId, trackId);
 
     const position = await this.withRetry(async (attempt) => {
       const key = await this.positionFor(playlistId, afterId, trackId, attempt);
@@ -91,7 +96,10 @@ export class PlaylistTracksService {
       return key;
     });
     this.bus.publish('track.moved', { playlistId, trackId, position });
-    return toView(await this.tracks.findOneOrFail({ where: { id: trackId }, relations: { addedBy: true } }));
+    // Not re-read after the UPDATE: if someone removes it right now, a
+    // re-read would throw (500). The move did happen; answer with it.
+    track.position = position;
+    return toView(track);
   }
 
   // Idempotent: removing a track that's already gone is fine.
@@ -145,7 +153,11 @@ export class PlaylistTracksService {
         if (constraint === 'UQ_playlist_tracks_song_once') {
           throw new ConflictException('This song is already in the playlist');
         }
-        if (constraint === 'UQ_playlist_tracks_position' && attempt + 1 < MAX_ATTEMPTS) continue;
+        if (constraint === 'UQ_playlist_tracks_position') {
+          if (attempt + 1 < MAX_ATTEMPTS) continue;
+          // Extremely busy gap: say so (409) rather than a 500.
+          throw new ConflictException('Many people are editing this spot right now — please try again');
+        }
         throw err;
       }
     }
@@ -164,7 +176,9 @@ export class PlaylistTracksService {
   }
 
   private async requireTrack(playlistId: string, trackId: string) {
-    const track = isUuid(trackId) ? await this.tracks.findOneBy({ id: trackId, playlistId }) : null;
+    const track = isUuid(trackId)
+      ? await this.tracks.findOne({ where: { id: trackId, playlistId }, relations: { addedBy: true } })
+      : null;
     if (!track) throw new NotFoundException('Track not found in this playlist');
     return track;
   }

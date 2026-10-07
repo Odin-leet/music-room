@@ -27,7 +27,8 @@
     "test:realtime": "node test/realtime/realtime.mjs",
     "test:playlist-realtime": "node test/realtime/playlist-realtime.mjs",
     "docs:openapi": "node scripts/export-openapi.mjs",
-    "test:playlist-race": "node test/race/playlist-race.mjs"
+    "test:playlist-race": "node test/race/playlist-race.mjs",
+    "test:friends-race": "node test/race/friends-race.mjs"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.1",

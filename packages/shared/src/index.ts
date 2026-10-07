@@ -70,6 +70,30 @@ export interface UserSummary {
   bio: string;
 }
 
+// ---------- Friends ----------
+
+// GET /friends
+export interface FriendView {
+  user: UserSummary;
+  since: string; // ISO date the request was accepted
+}
+
+// GET /friends/requests
+export interface FriendRequestView {
+  user: UserSummary;
+  at: string; // ISO date it was sent
+}
+export interface FriendRequestsView {
+  incoming: FriendRequestView[]; // to accept or decline
+  sent: FriendRequestView[]; // waiting for the other person
+}
+
+// POST /friends/requests, POST /friends/requests/:userId/accept
+export interface FriendshipResult {
+  userId: string;
+  friendship: FriendshipState;
+}
+
 // A track from the music provider, as our API returns it. Deliberately has
 // no preview URL: Deezer's preview links expire after ~15 minutes, so a
 // fresh one is fetched right before playing (GET /music/tracks/:id/preview).

@@ -1,8 +1,8 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import type { FriendshipState, UserProfile, UserSummary } from '@music-room/shared';
+import type { UserProfile, UserSummary } from '@music-room/shared';
 import { QueryFailedError, Repository } from 'typeorm';
-import { Friendship, pairOf } from '../friends/friendship.entity';
+import { FriendsService } from '../friends/friends.service';
 import type { UpdateProfileDto } from './dto/profile.dto';
 import { profileFor } from './profile-policy';
 import { User } from './user.entity';
@@ -15,8 +15,7 @@ export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly users: Repository<User>,
-    @InjectRepository(Friendship)
-    private readonly friendships: Repository<Friendship>,
+    private readonly friends: FriendsService,
   ) {}
 
   async create(data: Pick<User, 'email' | 'displayName' | 'passwordHash'>) {
@@ -56,7 +55,7 @@ export class UsersService {
     if (!user) throw new NotFoundException('User not found');
     if (!viewerId) return profileFor(user, 'anonymous', null);
     if (viewerId === user.id) return profileFor(user, 'self', null);
-    const friendship = await this.friendshipState(viewerId, user.id);
+    const friendship = await this.friends.state(viewerId, user.id);
     return profileFor(user, friendship === 'friends' ? 'friend' : 'other', friendship);
   }
 
@@ -92,13 +91,6 @@ export class UsersService {
     if (viewerId) query.andWhere('u.id <> :viewerId', { viewerId });
     const rows = await query.getMany();
     return rows.map((u) => ({ id: u.id, displayName: u.displayName, bio: u.bio }));
-  }
-
-  async friendshipState(viewerId: string, otherId: string): Promise<FriendshipState> {
-    const row = await this.friendships.findOneBy(pairOf(viewerId, otherId));
-    if (!row) return 'none';
-    if (row.status === 'accepted') return 'friends';
-    return row.requesterId === viewerId.toLowerCase() ? 'request_sent' : 'request_received';
   }
 }
 

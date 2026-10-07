@@ -54,6 +54,7 @@ export default function HomeScreen() {
       <Button title="Events" onPress={() => router.push('/events')} />
       <Button title="Playlists" onPress={() => router.push('/playlists')} />
       <Button title="My profile" onPress={() => router.push('/profile')} />
+      <Button title="People & friends" onPress={() => router.push('/people')} />
       <Button
         title="Log out"
         variant="secondary"

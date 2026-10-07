@@ -31,7 +31,8 @@
     "test:playlist-race": "node test/race/playlist-race.mjs",
     "test:friends-race": "node test/race/friends-race.mjs",
     "test:links": "node test/links/links-check.mjs",
-    "test:rate-limit": "node test/security/rate-limit-check.mjs"
+    "test:rate-limit": "node test/security/rate-limit-check.mjs",
+    "test:idor": "node test/security/idor-check.mjs"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.1",

@@ -9,8 +9,10 @@ services:
       POSTGRES_USER: ${DB_USER:-music_room}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-music_room}
       POSTGRES_DB: ${DB_NAME:-music_room_dev}
+    # 127.0.0.1 only: reachable from this machine (the API runs here), not
+    # from the network — the dev password is public in the repo's history.
     ports:
-      - "${DB_PORT:-5432}:5432"
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
     volumes:
       - music_room_pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -30,8 +32,9 @@ services:
       MP_SMTP_AUTH_ACCEPT_ANY: 1
       MP_SMTP_AUTH_ALLOW_INSECURE: 1
     ports:
-      - "1025:1025" # SMTP — the API sends here
-      - "8025:8025" # web inbox
+      # 127.0.0.1 only: the inbox shows every verification / reset code.
+      - "127.0.0.1:1025:1025" # SMTP — the API sends here
+      - "127.0.0.1:8025:8025" # web inbox
 
 volumes:
   music_room_pgdata:

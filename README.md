@@ -80,13 +80,13 @@ npm run start --workspace=apps/mobile   # press a to open on Android, r to reloa
 | Variable | What |
 |---|---|
 | `DB_HOST`, `DB_PORT` (5433), `DB_USER`, `DB_PASSWORD`, `DB_NAME` | Postgres. `DB_PORT` is also the port Compose publishes (5433 avoids a native Postgres on 5432). |
-| `JWT_ACCESS_SECRET` | Signs access tokens. **Use a long random value**: `openssl rand -base64 48`. |
+| `API_PORT` (`3000`) | The API's port. Set on the command line it wins over `.env` (e.g. a second instance for load tests). |
+| `JWT_ACCESS_SECRET` | Signs access tokens. **Use a long random value**: `openssl rand -base64 64`. Changing it signs everyone out. |
 | `JWT_ACCESS_EXPIRES` (`15m`), `JWT_REFRESH_EXPIRES` (`7d`) | Token lifetimes. |
 | `MAIL_HOST` (`localhost`), `MAIL_PORT` (`1025`), `MAIL_USER`, `MAIL_PASSWORD`, `MAIL_FROM` | SMTP. Defaults point at Mailpit; use a real provider in production. |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google sign-in (see below). |
 | `FACEBOOK_APP_ID`, `FACEBOOK_APP_SECRET` | Facebook login (see below). |
-
-`JWT_REFRESH_SECRET` is no longer used (refresh tokens are random, not JWTs) and can be removed.
+| `RATE_LIMIT_PER_MINUTE` (300), `AUTH_ATTEMPTS_PER_ACCOUNT_PER_MINUTE` (10), `AUTH_ATTEMPTS_PER_IP_PER_MINUTE` (100) | Optional: rate limits (see [docs/security.md](docs/security.md)). |
 
 **The app's API address** lives in `apps/mobile/.env` (Expo doesn't read the root `.env`): `EXPO_PUBLIC_API_URL=http://10.0.2.2:3000` for the Android emulator, `http://localhost:3000` for the iOS simulator, or `http://<your Mac's LAN IP>:3000` for a phone on the same Wi-Fi. It's built into the app, so never put secrets there.
 
@@ -247,11 +247,10 @@ packages/shared/src/index.ts # API/app contract types (users, auth, tracks, even
 
 ## Roadmap
 
-1. **Playlist Editor (V.2.3)** — shared playlists edited by several people at once (lock-free reordering with string positions), same visibility / invite / license pattern and real-time room as Track Vote.
-2. **Profile (V.1)** — public / friends / private / music-preference tiers, linking Google or Facebook from the profile.
-3. **V.6** — action logging (platform, device, app version), rate limiting.
-4. **V.7** — load testing with k6 (baseline + spike) and a stated server spec.
-5. Housekeeping — replace the short dev `JWT_ACCESS_SECRET`, drop `JWT_REFRESH_SECRET`, a periodic cleanup of expired tokens and codes.
+Done: Playlist Editor (V.2.3), Profile and friends (V.1), Security (V.6, see [docs/security.md](docs/security.md)).
+
+1. **V.7** — load testing with k6 (baseline + spike) and a stated server spec.
+2. Housekeeping — a periodic cleanup of expired tokens and codes.
 
 ## Full specification
 

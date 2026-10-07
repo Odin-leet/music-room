@@ -40,8 +40,10 @@ async function bootstrap() {
     swaggerOptions: { persistAuthorization: true },
   });
 
-  // PORT lets a second instance run next to the dev one (e.g. load tests).
-  await app.listen(Number(process.env.PORT ?? 3000));
-  console.log(`API is running on http://localhost:${process.env.PORT ?? 3000}`);
+  // API_PORT from .env; a value set on the command line wins, so a second
+  // instance can run next to the dev one (e.g. API_PORT=3100 for load tests).
+  const port = Number(process.env.API_PORT ?? 3000);
+  await app.listen(port);
+  console.log(`API is running on http://localhost:${port}`);
 }
 void bootstrap();

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { Friendship } from './friends/friendship.entity';
 import { User } from './users/user.entity';
 import { AuthModule } from './auth/auth.module';
 import { EmailVerificationCode } from './auth/email-verification-code.entity';
@@ -45,6 +46,7 @@ import { UsersModule } from './users/users.module';
         Playlist,
         PlaylistMember,
         PlaylistTrack,
+        Friendship,
       ],
       synchronize: false,
     }),

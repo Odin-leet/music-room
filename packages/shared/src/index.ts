@@ -24,11 +24,46 @@ export interface CurrentUser {
   emailVerified: boolean;
 }
 
-export interface PublicUserProfile {
+// ---------- Profile (V.1) ----------
+
+// Music genres you can pick (Deezer's top-level genres). Structured tags,
+// not free text, so they can drive suggestions later.
+export const MUSIC_GENRES = [
+  'pop', 'rap', 'rock', 'dance', 'rnb', 'alternative', 'electro', 'folk', 'reggae', 'jazz',
+  'classical', 'metal', 'soul', 'blues', 'latin', 'african', 'asian', 'indian', 'brazilian', 'soundtracks', 'kids',
+] as const;
+export type MusicGenre = (typeof MUSIC_GENRES)[number];
+
+// Who may see a group of profile fields.
+export type ProfileVisibility = 'public' | 'friends' | 'private';
+
+// How the person looking relates to the profile's owner.
+//   anonymous = no token (an API integrator), other = logged in, not a friend.
+export type ProfileRelation = 'self' | 'friend' | 'other' | 'anonymous';
+
+// Friendship state between the viewer and the profile's owner.
+export type FriendshipState = 'none' | 'friends' | 'request_sent' | 'request_received';
+
+// GET /users/:id — only the groups the viewer may see are filled in; the
+// others are null. "public" is always there.
+export interface UserProfile {
+  id: string;
+  relation: ProfileRelation;
+  // null when not logged in (and for yourself).
+  friendship: FriendshipState | null;
+  public: { displayName: string; bio: string };
+  friendsOnly: { realName: string | null; city: string | null } | null;
+  private: { phone: string | null; birthDate: string | null } | null; // birthDate: YYYY-MM-DD
+  music: { genres: MusicGenre[]; artists: string[] } | null;
+  // Who you chose to show your music to. Only on your own profile.
+  musicVisibility: ProfileVisibility | null;
+}
+
+// GET /users?q= — search results: public info only.
+export interface UserSummary {
   id: string;
   displayName: string;
-  publicInfo: Record<string, unknown>;
-  musicPreferences: string[];
+  bio: string;
 }
 
 // A track from the music provider, as our API returns it. Deliberately has

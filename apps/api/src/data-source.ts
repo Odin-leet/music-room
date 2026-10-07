@@ -12,6 +12,7 @@ import { PlaylistTrack } from './playlists/playlist-track.entity';
 import { Playlist } from './playlists/playlist.entity';
 import { PasswordResetCode } from './auth/password-reset-code.entity';
 import { RefreshToken } from './auth/refresh-token.entity';
+import { Friendship } from './friends/friendship.entity';
 import { User } from './users/user.entity';
 
 config({ path: resolve(__dirname, '../../../.env') });
@@ -36,6 +37,7 @@ export default new DataSource({
     Playlist,
     PlaylistMember,
     PlaylistTrack,
+    Friendship,
   ],
   migrations: ['src/migrations/*.ts'],
 });

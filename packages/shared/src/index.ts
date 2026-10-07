@@ -289,3 +289,14 @@ export interface PlaylistClientToServerEvents {
   'playlist:join': (payload: { playlistId: string }, ack: (res: JoinAck) => void) => void;
   'playlist:leave': (payload: { playlistId: string }, ack: (res: { ok: true }) => void) => void;
 }
+
+// ---------- Your own realtime (Socket.IO, namespace /me) ----------
+// Full reference: docs/realtime.md. No join: on connection the server puts
+// your socket in your own room, chosen from your token.
+
+export interface MeServerToClientEvents {
+  // Something changed between you and this person (a request sent, accepted,
+  // declined or cancelled, or an unfriend): refetch GET /friends/requests,
+  // GET /friends, or their profile.
+  'friends:changed': (payload: { userId: string }) => void;
+}

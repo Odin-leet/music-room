@@ -8,6 +8,7 @@ import type {
   FriendView,
 } from '@music-room/shared';
 import { DataSource, QueryFailedError, Repository } from 'typeorm';
+import { FriendsBus } from './friends-bus';
 import { Friendship, pairOf } from './friendship.entity';
 
 const FOREIGN_KEY_VIOLATION = '23503';
@@ -22,6 +23,7 @@ export class FriendsService {
   constructor(
     @InjectRepository(Friendship) private readonly friendships: Repository<Friendship>,
     private readonly dataSource: DataSource,
+    private readonly bus: FriendsBus,
   ) {}
 
   // Ask `otherId` to be friends. If they had already asked me, this accepts
@@ -31,16 +33,20 @@ export class FriendsService {
       throw new BadRequestException('You cannot add yourself as a friend');
     }
     const { userAId, userBId } = pairOf(meId, otherId);
+    let changed: unknown[];
     try {
       // Two simultaneous INSERTs of the same pair: Postgres makes the second
       // wait for the first, then it takes the ON CONFLICT branch, where the
       // WHERE decides: a pending request from the OTHER person -> accepted.
-      await this.dataSource.query(
+      // RETURNING gives a row only if one was inserted or updated: asking
+      // again (nothing changes) returns none, so nobody is notified.
+      changed = await this.dataSource.query(
         `INSERT INTO friendships ("userAId", "userBId", "requesterId", "status")
          VALUES ($1, $2, $3, 'pending')
          ON CONFLICT ("userAId", "userBId") DO UPDATE
            SET "status" = 'accepted', "acceptedAt" = now()
-           WHERE friendships."status" = 'pending' AND friendships."requesterId" <> EXCLUDED."requesterId"`,
+           WHERE friendships."status" = 'pending' AND friendships."requesterId" <> EXCLUDED."requesterId"
+         RETURNING "status"`,
         [userAId, userBId, meId.toLowerCase()],
       );
     } catch (err) {
@@ -49,6 +55,7 @@ export class FriendsService {
       }
       throw err;
     }
+    if (changed.length) this.notify(meId, otherId);
     return { userId: otherId, friendship: await this.state(meId, otherId) };
   }
 
@@ -63,17 +70,26 @@ export class FriendsService {
     if (!result.affected && (await this.state(meId, otherId)) !== 'friends') {
       throw new NotFoundException('No friend request from this user');
     }
+    if (result.affected) this.notify(meId, otherId);
     return { userId: otherId, friendship: 'friends' };
   }
 
   // Decline a request I received, or cancel one I sent. Idempotent.
   async dropRequest(meId: string, otherId: string) {
-    await this.friendships.delete({ ...pairOf(meId, otherId), status: 'pending' });
+    const { affected } = await this.friendships.delete({ ...pairOf(meId, otherId), status: 'pending' });
+    if (affected) this.notify(meId, otherId);
   }
 
   // Unfriend. Idempotent.
   async unfriend(meId: string, otherId: string) {
-    await this.friendships.delete({ ...pairOf(meId, otherId), status: 'accepted' });
+    const { affected } = await this.friendships.delete({ ...pairOf(meId, otherId), status: 'accepted' });
+    if (affected) this.notify(meId, otherId);
+  }
+
+  // Each call above runs one statement outside a transaction: when it
+  // returns, the change is committed, so it's safe to announce.
+  private notify(meId: string, otherId: string) {
+    this.bus.publish('friends.changed', { userIds: [meId.toLowerCase(), otherId.toLowerCase()] });
   }
 
   async friends(meId: string): Promise<FriendView[]> {

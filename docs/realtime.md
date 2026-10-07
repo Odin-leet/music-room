@@ -1,4 +1,4 @@
-# Realtime API — Track Vote and Playlist Editor
+# Realtime API — Track Vote, Playlist Editor and your own updates
 
 Live updates for Track Vote events, over **Socket.IO 4** (namespace **`/events`**). The socket only **receives**: every change (suggest, vote, un-vote, edit an event) goes through the REST API, and the server pushes the result to everyone watching.
 
@@ -157,3 +157,41 @@ npm run test:playlist-realtime --workspace=apps/api   # this namespace
 - an invite sending `playlist:updated`;
 - going private removing a non-member (who then receives nothing more);
 - deletion.
+
+---
+
+# Your own updates: namespace `/me`
+
+For things about **you** rather than about an event or a playlist. Right now that means friend requests and friendships.
+
+Connecting works like the other namespaces: a valid access token in `auth.token`, otherwise `connect_error: unauthorized`.
+
+**There is nothing to join.** On connection the server puts the socket in your own room, chosen from the token, so you can only ever receive messages about yourself. All your devices (phone, emulator…) are in that room and all receive them.
+
+```ts
+import type { MeServerToClientEvents } from '@music-room/shared';
+const socket: Socket<MeServerToClientEvents> = io(`${API_URL}/me`, { auth: { token: accessToken } });
+```
+
+## Server → client
+
+| Event | Payload | Sent when |
+|---|---|---|
+| `friends:changed` | `{ userId }`: the **other** person | Something changed between you and them: a request sent, accepted, declined or cancelled, or an unfriend. **Both** people receive it, each with the other's id |
+
+The message doesn't carry the new state. Refetch what you show: `GET /friends/requests`, `GET /friends`, or `GET /users/:userId`, whose visible tiers may just have changed.
+
+It's sent only after the change has been saved, and **only if something actually changed**. Asking again, unfriending someone who isn't a friend, or cancelling an already-gone request sends nothing.
+
+After a reconnect, refetch once: anything may have changed while you were offline.
+
+## Tests
+
+```bash
+npm run test:me-realtime --workspace=apps/api   # needs the API running
+```
+
+It covers:
+- refused tokens;
+- each change (request, accept, unfriend, request back, cancel) reaching **both** people and **all** of a user's devices, but not a third user;
+- no message when nothing changed.

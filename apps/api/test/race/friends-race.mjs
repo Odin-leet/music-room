@@ -69,7 +69,13 @@ async function main() {
   const statesA = await Promise.all(pairs.flatMap(([a, b]) => [stateOf(a, b), stateOf(b, a)]));
   check('every pair is now friends, from both sides', [...new Set(statesA)], ['friends']);
   const lists = await Promise.all(pairs.map(([a]) => call('GET', '/friends', { token: a.token })));
-  check('each first person has exactly 1 friend', lists.map((l) => l.data.length), [1, 1, 1, 1, 1]);
+  // Among the race users only: they may also have real friends from manual tests.
+  const raceIds = new Set(users.map((u) => u.id));
+  check(
+    'each first person’s only race-user friend is their partner',
+    lists.map((l) => l.data.filter((f) => raceIds.has(f.user.id)).map((f) => f.user.id)),
+    pairs.map(([, b]) => [b.id]),
+  );
   const reqs = await Promise.all(pairs.map(([, b]) => call('GET', '/friends/requests', { token: b.token })));
   check('no pending request left', reqs.map((r) => r.data.incoming.length + r.data.sent.length), [0, 0, 0, 0, 0]);
 

@@ -14,7 +14,7 @@ import type {
   PlaylistServerToClientEvents,
 } from '@music-room/shared';
 import type { Namespace, Socket } from 'socket.io';
-import type { JwtPayload } from '../auth/jwt.strategy';
+import { socketAuth } from '../auth/socket-auth';
 import { PlaylistsBus } from './playlists-bus';
 import { PlaylistsService } from './playlists.service';
 
@@ -44,16 +44,7 @@ export class PlaylistsGateway implements OnGatewayInit, OnModuleInit {
   ) {}
 
   afterInit(server: PlaylistNamespace) {
-    server.use((socket, next) => {
-      const token = (socket.handshake.auth as { token?: unknown }).token;
-      try {
-        if (typeof token !== 'string') throw new Error('no token');
-        socket.data.userId = this.jwt.verify<JwtPayload>(token).sub;
-        next();
-      } catch {
-        next(new Error('unauthorized'));
-      }
-    });
+    server.use(socketAuth(this.jwt));
   }
 
   onModuleInit() {

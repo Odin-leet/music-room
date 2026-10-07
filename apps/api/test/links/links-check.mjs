@@ -142,7 +142,7 @@ async function main() {
     call('DELETE', '/users/me/identities/google', { token: temp.token }),
     call('DELETE', '/users/me/identities/facebook', { token: temp.token }),
   ]);
-  check('unlink Google AND Facebook at the same instant -> one 200, one 409', both.map((r) => r.status).sort(), [200, 409]);
+  check('unlink Google AND Facebook at the same instant -> one 200, one 409', both.map((r) => r.status).sort((x, y) => x - y), [200, 409]);
   const left = await methods(temp);
   check('…exactly one way to sign in remains', [left.google, left.facebook].filter(Boolean).length, 1);
   const last = left.google ? 'google' : 'facebook';

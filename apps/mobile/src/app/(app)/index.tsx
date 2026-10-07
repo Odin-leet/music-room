@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { API_URL } from '@/config';
 import { useCurrentUser } from '@/session/CurrentUserProvider';
 import { useHealth } from '@/hooks/useHealth';
+import { useIncomingRequests } from '@/profile/MeRealtimeProvider';
 import { useSession } from '@/session/SessionProvider';
 import { Button, Card, Screen, Text } from '@/ui';
 
@@ -10,6 +11,7 @@ export default function HomeScreen() {
   const { signOut } = useSession();
   const { me, reload } = useCurrentUser();
   const { health, check } = useHealth();
+  const incomingRequests = useIncomingRequests();
   const [signingOut, setSigningOut] = useState(false);
   const [reloading, setReloading] = useState(false);
 
@@ -54,7 +56,10 @@ export default function HomeScreen() {
       <Button title="Events" onPress={() => router.push('/events')} />
       <Button title="Playlists" onPress={() => router.push('/playlists')} />
       <Button title="My profile" onPress={() => router.push('/profile')} />
-      <Button title="People & friends" onPress={() => router.push('/people')} />
+      <Button
+        title={incomingRequests ? `People & friends · ${incomingRequests} new request${incomingRequests > 1 ? 's' : ''}` : 'People & friends'}
+        onPress={() => router.push(incomingRequests ? '/people/friends' : '/people')}
+      />
       <Button
         title="Log out"
         variant="secondary"

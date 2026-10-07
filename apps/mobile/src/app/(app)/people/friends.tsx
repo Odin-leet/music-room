@@ -3,13 +3,14 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { ApiError } from '@/api/client';
+import { useFriendsChanged } from '@/profile/MeRealtimeProvider';
 import { PersonRow } from '@/profile/PersonRow';
 import { useSession } from '@/session/SessionProvider';
 import { colors, spacing } from '@/theme';
 import { Button, Screen, Text } from '@/ui';
 
-// Requests to answer, requests I sent, and my friends.
-// Plain REST: reloads when the screen opens and on pull-to-refresh.
+// Requests to answer, requests I sent, and my friends. Loads on open, on
+// pull-to-refresh, and live: whenever /me says something changed.
 export default function FriendsScreen() {
   const { authedApi } = useSession();
   const [requests, setRequests] = useState<FriendRequestsView | null>(null);
@@ -37,6 +38,7 @@ export default function FriendsScreen() {
       void load();
     }, [load]),
   );
+  useFriendsChanged(() => void load());
 
   const act = async (userId: string, action: () => Promise<unknown>) => {
     setBusy(userId);

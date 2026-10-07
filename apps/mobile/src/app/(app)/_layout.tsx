@@ -1,5 +1,6 @@
 import { Stack } from 'expo-router';
 import { ActivityIndicator } from 'react-native';
+import { MeRealtimeProvider } from '@/profile/MeRealtimeProvider';
 import { CurrentUserProvider, useCurrentUser } from '@/session/CurrentUserProvider';
 import { useSession } from '@/session/SessionProvider';
 import { colors } from '@/theme';
@@ -10,7 +11,10 @@ import { Button, Screen, Text } from '@/ui';
 export default function AppLayout() {
   return (
     <CurrentUserProvider>
-      <AppNavigator />
+      {/* One /me socket for the whole signed-in area (friend notifications). */}
+      <MeRealtimeProvider>
+        <AppNavigator />
+      </MeRealtimeProvider>
     </CurrentUserProvider>
   );
 }

@@ -17,6 +17,7 @@ import { PasswordResetCode } from './auth/password-reset-code.entity';
 import { RefreshToken } from './auth/refresh-token.entity';
 import { EventsModule } from './events/events.module';
 import { FriendsModule } from './friends/friends.module';
+import { MeModule } from './me/me.module';
 import { HealthController } from './health/health.controller';
 import { MusicModule } from './music/music.module';
 import { PlaylistsModule } from './playlists/playlists.module';
@@ -57,6 +58,7 @@ import { UsersModule } from './users/users.module';
     EventsModule,
     PlaylistsModule,
     FriendsModule,
+    MeModule,
   ],
   controllers: [HealthController],
 })

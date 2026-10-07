@@ -10,7 +10,7 @@ import {
 } from '@nestjs/websockets';
 import type { ClientToServerEvents, JoinAck, ServerToClientEvents } from '@music-room/shared';
 import type { Namespace, Socket } from 'socket.io';
-import type { JwtPayload } from '../auth/jwt.strategy';
+import { socketAuth } from '../auth/socket-auth';
 import { EventsBus } from './events-bus';
 import { EventsService } from './events.service';
 import { QueueService } from './queue.service';
@@ -49,16 +49,7 @@ export class EventsGateway implements OnGatewayInit, OnModuleInit {
   // Authentication happens here, before the connection is accepted:
   // no/invalid/expired token -> the client gets `connect_error: unauthorized`.
   afterInit(server: EventsNamespace) {
-    server.use((socket, next) => {
-      const token = (socket.handshake.auth as { token?: unknown }).token;
-      try {
-        if (typeof token !== 'string') throw new Error('no token');
-        socket.data.userId = this.jwt.verify<JwtPayload>(token).sub;
-        next();
-      } catch {
-        next(new Error('unauthorized'));
-      }
-    });
+    server.use(socketAuth(this.jwt));
   }
 
   onModuleInit() {

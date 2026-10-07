@@ -4,6 +4,7 @@ import { useCallback, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { ApiError } from '@/api/client';
 import { GENRE_LABEL } from '@/profile/labels';
+import { useFriendsChanged } from '@/profile/MeRealtimeProvider';
 import { useSession } from '@/session/SessionProvider';
 import { spacing } from '@/theme';
 import { Button, Card, Screen, Text } from '@/ui';
@@ -32,6 +33,10 @@ export default function PersonScreen() {
       void load();
     }, [load]),
   );
+  // Live: they accepted / declined / unfriended -> what we may see changed.
+  useFriendsChanged((otherId) => {
+    if (!otherId || otherId === id?.toLowerCase()) void load();
+  });
 
   // Every friend action changes which tiers we may see: reload the profile.
   const act = async (action: () => Promise<unknown>) => {

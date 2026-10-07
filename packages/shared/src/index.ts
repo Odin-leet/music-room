@@ -4,6 +4,10 @@
 // same types instead of redefining its own guess at what the API returns,
 // so a change to a shape is a compile error in the mobile app, not a
 // runtime surprise.
+//
+// Mostly types, but a few values too (e.g. MUSIC_GENRES). The API's Node
+// loads this .ts file as-is (built-in type stripping, Node >= 22.18), so use
+// only syntax that can simply be erased: no `enum`, no `namespace`.
 
 // GET /health
 export interface HealthResponse {

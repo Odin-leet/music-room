@@ -59,6 +59,386 @@
         ]
       }
     },
+    "/users/me/profile": {
+      "get": {
+        "operationId": "UsersController_myProfile",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserProfileDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Your own profile, every tier included",
+        "tags": [
+          "Users"
+        ]
+      },
+      "patch": {
+        "operationId": "UsersController_updateProfile",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProfileDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserProfileDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed (unknown genre, more than 10 artists, bad date…)"
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Edit your profile: public, friends-only, private and music fields (send only what changes)",
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/users": {
+      "get": {
+        "description": "Works without a token (public tier only). With a valid token you see more, depending on your relation; an invalid or expired token is a 401.",
+        "operationId": "UsersController_search",
+        "parameters": [
+          {
+            "name": "q",
+            "required": true,
+            "in": "query",
+            "description": "At least 2 characters of a display name.",
+            "schema": {
+              "minLength": 2,
+              "maxLength": 50,
+              "example": "ali",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserSummaryDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "q must be 2–50 characters"
+          },
+          "401": {
+            "description": "A token was sent but is invalid or expired"
+          }
+        },
+        "security": [
+          {},
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Search people by display name (public info only)",
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/users/{id}": {
+      "get": {
+        "description": "Works without a token (public tier only). With a valid token you see more, depending on your relation; an invalid or expired token is a 401.",
+        "operationId": "UsersController_profile",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserProfileDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "A token was sent but is invalid or expired"
+          },
+          "404": {
+            "description": "No such user"
+          }
+        },
+        "security": [
+          {},
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Someone's profile, showing only the tiers you may see",
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/friends": {
+      "get": {
+        "operationId": "FriendsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FriendDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Your friends",
+        "tags": [
+          "Friends"
+        ]
+      }
+    },
+    "/friends/requests": {
+      "get": {
+        "operationId": "FriendsController_requests",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FriendRequestsDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Friend requests: received (to accept / decline) and sent (waiting)",
+        "tags": [
+          "Friends"
+        ]
+      },
+      "post": {
+        "description": "If they had already asked you, this accepts their request (friendship = \"friends\"). Asking again changes nothing.",
+        "operationId": "FriendsController_request",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FriendRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FriendshipResultDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid userId, or yourself"
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token"
+          },
+          "404": {
+            "description": "No such user"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Ask someone to be friends",
+        "tags": [
+          "Friends"
+        ]
+      }
+    },
+    "/friends/requests/{userId}/accept": {
+      "post": {
+        "operationId": "FriendsController_accept",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FriendshipResultDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token"
+          },
+          "404": {
+            "description": "This person has not sent you a request"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Accept the request this person sent you (fine if already friends)",
+        "tags": [
+          "Friends"
+        ]
+      }
+    },
+    "/friends/requests/{userId}": {
+      "delete": {
+        "operationId": "FriendsController_dropRequest",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No pending request between you any more"
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Decline a request you received, or cancel one you sent (idempotent)",
+        "tags": [
+          "Friends"
+        ]
+      }
+    },
+    "/friends/{userId}": {
+      "delete": {
+        "operationId": "FriendsController_unfriend",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Not friends any more"
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Unfriend (idempotent)",
+        "tags": [
+          "Friends"
+        ]
+      }
+    },
     "/auth/register": {
       "post": {
         "operationId": "AuthController_register",
@@ -413,7 +793,7 @@
         ],
         "responses": {
           "302": {
-            "description": "Redirects the browser back to the app with ?code= (single-use, 60 s) or ?error=account_exists|email_required|access_denied|…"
+            "description": "Redirects the browser back to the app with ?code= (single-use, 60 s), ?link= (link mode: a 60 s ticket for POST /auth/link/confirm) or ?error=account_exists|email_required|access_denied|…"
           },
           "400": {
             "description": "Forged or expired state"
@@ -493,7 +873,7 @@
         ],
         "responses": {
           "302": {
-            "description": "Redirects the browser back to the app with ?code= (single-use, 60 s) or ?error=account_exists|email_required|access_denied|…"
+            "description": "Redirects the browser back to the app with ?code= (single-use, 60 s), ?link= (link mode: a 60 s ticket for POST /auth/link/confirm) or ?error=account_exists|email_required|access_denied|…"
           },
           "400": {
             "description": "Forged or expired state"
@@ -502,6 +882,184 @@
         "summary": "Facebook sends the browser here (not for direct calls)",
         "tags": [
           "Social login (browser redirects)"
+        ]
+      }
+    },
+    "/users/me/identities": {
+      "get": {
+        "operationId": "AccountLinksController_methods",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignInMethodsDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Your sign-in methods: password, Google, Facebook",
+        "tags": [
+          "Sign-in methods (linking)"
+        ]
+      }
+    },
+    "/auth/{provider}/link": {
+      "post": {
+        "operationId": "AccountLinksController_start",
+        "parameters": [
+          {
+            "name": "provider",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "enum": [
+                "google",
+                "facebook"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartLinkDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StartLinkResultDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unknown provider, redirect not an app deep link, or bad codeChallenge"
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Start linking Google or Facebook to your account: returns the URL to open in a browser",
+        "tags": [
+          "Sign-in methods (linking)"
+        ]
+      }
+    },
+    "/auth/link/confirm": {
+      "post": {
+        "operationId": "AccountLinksController_confirm",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmLinkDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignInMethodsDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid / expired ticket, or not started by you (other user or wrong verifier)"
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token"
+          },
+          "409": {
+            "description": "That provider account belongs to another user, or you already linked a different one"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Finish linking with the ticket the browser brought back (and your PKCE verifier)",
+        "tags": [
+          "Sign-in methods (linking)"
+        ]
+      }
+    },
+    "/users/me/identities/{provider}": {
+      "delete": {
+        "operationId": "AccountLinksController_unlink",
+        "parameters": [
+          {
+            "name": "provider",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "enum": [
+                "google",
+                "facebook"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignInMethodsDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired access token"
+          },
+          "409": {
+            "description": "It is your only sign-in method"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Unlink Google or Facebook (refused if it is your last way to sign in)",
+        "tags": [
+          "Sign-in methods (linking)"
         ]
       }
     },
@@ -1852,6 +2410,385 @@
           "emailVerified"
         ]
       },
+      "FriendsTierDto": {
+        "type": "object",
+        "properties": {
+          "realName": {
+            "type": "string",
+            "nullable": true
+          },
+          "city": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "realName",
+          "city"
+        ]
+      },
+      "PrivateTierDto": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "birthDate": {
+            "type": "string",
+            "nullable": true,
+            "format": "date"
+          }
+        },
+        "required": [
+          "phone",
+          "birthDate"
+        ]
+      },
+      "MusicTierDto": {
+        "type": "object",
+        "properties": {
+          "genres": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "pop",
+                "rap",
+                "rock",
+                "dance",
+                "rnb",
+                "alternative",
+                "electro",
+                "folk",
+                "reggae",
+                "jazz",
+                "classical",
+                "metal",
+                "soul",
+                "blues",
+                "latin",
+                "african",
+                "asian",
+                "indian",
+                "brazilian",
+                "soundtracks",
+                "kids"
+              ]
+            }
+          },
+          "artists": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "genres",
+          "artists"
+        ]
+      },
+      "PublicTierDto": {
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": "string"
+          },
+          "bio": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "displayName",
+          "bio"
+        ]
+      },
+      "UserProfileDto": {
+        "type": "object",
+        "properties": {
+          "relation": {
+            "description": "How you relate to this person; decides which tiers are filled in.",
+            "enum": [
+              "self",
+              "friend",
+              "other",
+              "anonymous"
+            ],
+            "type": "string"
+          },
+          "friendship": {
+            "nullable": true,
+            "description": "null when not logged in, and on your own profile.",
+            "enum": [
+              "none",
+              "friends",
+              "request_sent",
+              "request_received"
+            ],
+            "type": "string"
+          },
+          "friendsOnly": {
+            "nullable": true,
+            "description": "Friends and yourself only; otherwise null.",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FriendsTierDto"
+              }
+            ]
+          },
+          "private": {
+            "nullable": true,
+            "description": "Yourself only; otherwise null.",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PrivateTierDto"
+              }
+            ]
+          },
+          "music": {
+            "nullable": true,
+            "description": "Visible according to the owner's musicVisibility; otherwise null.",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MusicTierDto"
+              }
+            ]
+          },
+          "musicVisibility": {
+            "nullable": true,
+            "description": "Your own choice; only on your own profile.",
+            "enum": [
+              "public",
+              "friends",
+              "private"
+            ],
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "public": {
+            "$ref": "#/components/schemas/PublicTierDto"
+          }
+        },
+        "required": [
+          "relation",
+          "friendship",
+          "friendsOnly",
+          "private",
+          "music",
+          "musicVisibility",
+          "id",
+          "public"
+        ]
+      },
+      "UpdateProfileDto": {
+        "type": "object",
+        "properties": {
+          "realName": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 100
+          },
+          "city": {
+            "type": "string",
+            "nullable": true,
+            "example": "Lyon",
+            "maxLength": 100
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true,
+            "pattern": "^\\+?[0-9 ().-]{5,30}$"
+          },
+          "birthDate": {
+            "type": "string",
+            "nullable": true,
+            "description": "YYYY-MM-DD.",
+            "example": "1999-04-01",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "format": "date"
+          },
+          "musicGenres": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "enum": [
+                "pop",
+                "rap",
+                "rock",
+                "dance",
+                "rnb",
+                "alternative",
+                "electro",
+                "folk",
+                "reggae",
+                "jazz",
+                "classical",
+                "metal",
+                "soul",
+                "blues",
+                "latin",
+                "african",
+                "asian",
+                "indian",
+                "brazilian",
+                "soundtracks",
+                "kids"
+              ]
+            }
+          },
+          "musicVisibility": {
+            "description": "Who may see your music preferences.",
+            "enum": [
+              "public",
+              "friends",
+              "private"
+            ],
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "bio": {
+            "type": "string",
+            "description": "Visible to everyone.",
+            "example": "Jazz on Sundays, techno on Fridays",
+            "maxLength": 300
+          },
+          "musicArtists": {
+            "description": "Up to 10 artist names.",
+            "example": [
+              "Nina Simone",
+              "Daft Punk"
+            ],
+            "uniqueItems": true,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 100,
+              "minLength": 1
+            }
+          }
+        }
+      },
+      "UserSummaryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "bio": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "displayName",
+          "bio"
+        ]
+      },
+      "FriendDto": {
+        "type": "object",
+        "properties": {
+          "since": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserSummaryDto"
+          }
+        },
+        "required": [
+          "since",
+          "user"
+        ]
+      },
+      "FriendRequestItemDto": {
+        "type": "object",
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserSummaryDto"
+          }
+        },
+        "required": [
+          "at",
+          "user"
+        ]
+      },
+      "FriendRequestsDto": {
+        "type": "object",
+        "properties": {
+          "incoming": {
+            "description": "Sent to you: accept or decline.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FriendRequestItemDto"
+            }
+          },
+          "sent": {
+            "description": "Sent by you, waiting.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FriendRequestItemDto"
+            }
+          }
+        },
+        "required": [
+          "incoming",
+          "sent"
+        ]
+      },
+      "FriendRequestDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "description": "The person to ask.",
+            "example": "baaa7e88-cac5-41d3-b29d-4b3e64941eec",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "userId"
+        ]
+      },
+      "FriendshipResultDto": {
+        "type": "object",
+        "properties": {
+          "friendship": {
+            "description": "\"friends\" if they had already asked you (asking back accepts it).",
+            "enum": [
+              "none",
+              "friends",
+              "request_sent",
+              "request_received"
+            ],
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "friendship",
+          "userId"
+        ]
+      },
       "RegisterDto": {
         "type": "object",
         "properties": {
@@ -1979,6 +2916,77 @@
         },
         "required": [
           "code",
+          "codeVerifier"
+        ]
+      },
+      "SignInMethodsDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "boolean",
+            "description": "False for accounts created with Google / Facebook until a password is set (\"Forgot password\")."
+          },
+          "google": {
+            "type": "boolean"
+          },
+          "facebook": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "email",
+          "password",
+          "google",
+          "facebook"
+        ]
+      },
+      "StartLinkDto": {
+        "type": "object",
+        "properties": {
+          "redirect": {
+            "type": "string",
+            "description": "App deep link the browser returns to.",
+            "example": "exp://192.168.1.10:8081/--/oauth"
+          },
+          "codeChallenge": {
+            "type": "string",
+            "description": "PKCE S256 challenge: base64url(SHA-256(verifier)), 43 characters."
+          }
+        },
+        "required": [
+          "redirect",
+          "codeChallenge"
+        ]
+      },
+      "StartLinkResultDto": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "Open this in a browser tab (the provider's sign-in page)."
+          }
+        },
+        "required": [
+          "url"
+        ]
+      },
+      "ConfirmLinkDto": {
+        "type": "object",
+        "properties": {
+          "ticket": {
+            "type": "string",
+            "description": "The `link` value the browser brought back to the app (valid 60 s)."
+          },
+          "codeVerifier": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9\\-._~]{43,128}$"
+          }
+        },
+        "required": [
+          "ticket",
           "codeVerifier"
         ]
       },

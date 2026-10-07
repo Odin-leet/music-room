@@ -20,6 +20,8 @@ import { UsersService } from './users.service';
 const E401 = 'Missing, invalid or expired access token';
 const OPTIONAL_AUTH =
   'Works without a token (public tier only). With a valid token you see more, depending on your relation; an invalid or expired token is a 401.';
+// OpenAPI for "token optional": either no security ({}) or the bearer token.
+const TOKEN_OPTIONAL: Record<string, string[]>[] = [{}, { bearer: [] }];
 
 @ApiTags('Users')
 @ApiBearerAuth()
@@ -62,7 +64,11 @@ export class UsersController {
     return this.usersService.updateProfile(user.userId, body);
   }
 
-  @ApiOperation({ summary: 'Search people by display name (public info only)', description: OPTIONAL_AUTH })
+  @ApiOperation({
+    summary: 'Search people by display name (public info only)',
+    description: OPTIONAL_AUTH,
+    security: TOKEN_OPTIONAL,
+  })
   @ApiOkResponse({ type: [UserSummaryDto] })
   @ApiBadRequestResponse({ description: 'q must be 2–50 characters' })
   @ApiUnauthorizedResponse({ description: 'A token was sent but is invalid or expired' })
@@ -72,7 +78,11 @@ export class UsersController {
     return this.usersService.search(query.q, user?.userId ?? null);
   }
 
-  @ApiOperation({ summary: "Someone's profile, showing only the tiers you may see", description: OPTIONAL_AUTH })
+  @ApiOperation({
+    summary: "Someone's profile, showing only the tiers you may see",
+    description: OPTIONAL_AUTH,
+    security: TOKEN_OPTIONAL,
+  })
   @ApiOkResponse({ type: UserProfileDto })
   @ApiNotFoundResponse({ description: 'No such user' })
   @ApiUnauthorizedResponse({ description: 'A token was sent but is invalid or expired' })

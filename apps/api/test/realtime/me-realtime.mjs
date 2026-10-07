@@ -65,13 +65,13 @@ async function main() {
 
   console.log('\n2. Every change reaches both people, and only them');
   const steps = [
-    ['A sends a request', () => call('POST', '/friends/requests', { token: a.token, body: { userId: b.id } })],
-    ['B accepts', () => call('POST', `/friends/requests/${a.id}/accept`, { token: b.token })],
-    ['A unfriends', () => call('DELETE', `/friends/${b.id}`, { token: a.token })],
-    ['B sends a request', () => call('POST', '/friends/requests', { token: b.token, body: { userId: a.id } })],
-    ['B cancels it', () => call('DELETE', `/friends/requests/${a.id}`, { token: b.token })],
+    { label: 'A sends a request', action: () => call('POST', '/friends/requests', { token: a.token, body: { userId: b.id } }) },
+    { label: 'B accepts', action: () => call('POST', `/friends/requests/${a.id}/accept`, { token: b.token }) },
+    { label: 'A unfriends', action: () => call('DELETE', `/friends/${b.id}`, { token: a.token }) },
+    { label: 'B sends a request', action: () => call('POST', '/friends/requests', { token: b.token, body: { userId: a.id } }) },
+    { label: 'B cancels it', action: () => call('DELETE', `/friends/requests/${a.id}`, { token: b.token }) },
   ];
-  for (const [label, action] of steps) {
+  for (const { label, action } of steps) {
     clear(sa, sa2, sb, sc);
     await action();
     await sleep(150);

@@ -12,7 +12,10 @@ const ALLOWED_APP_REDIRECTS = [/^exp:\/\//, /^musicroom:\/\//];
 const PKCE_CHALLENGE = /^[A-Za-z0-9_-]{43}$/;
 
 export type OAuthProvider = 'google' | 'facebook';
-export type OAuthState = { redirect: string; codeChallenge: string };
+// linkUserId: null = sign in; a user id = "link this provider account to
+// that (already logged-in) user" (see account-links.service.ts). It's inside
+// the signed state, so it can't be changed on the way through the provider.
+export type OAuthState = { redirect: string; codeChallenge: string; linkUserId: string | null };
 
 // `state` is the OAuth parameter that round-trips through the provider and
 // comes back to our callback. We make it a signed, 10-minute JWT holding the
@@ -23,10 +26,11 @@ export class OAuthStateService {
   constructor(private readonly jwtService: JwtService) {}
 
   // Validates what the app sent to /start, then signs it.
-  create(provider: OAuthProvider, redirect?: string, codeChallenge?: string): string {
+  create(provider: OAuthProvider, redirect?: string, codeChallenge?: string, linkUserId: string | null = null): string {
     const state: OAuthState = {
       redirect: this.assertAllowedAppRedirect(redirect),
       codeChallenge: this.assertValidChallenge(codeChallenge),
+      linkUserId,
     };
     return this.jwtService.sign({ purpose: `${provider}-oauth-state`, ...state }, { expiresIn: '10m' });
   }
@@ -39,6 +43,7 @@ export class OAuthStateService {
       return {
         redirect: this.assertAllowedAppRedirect(payload.redirect),
         codeChallenge: this.assertValidChallenge(payload.codeChallenge),
+        linkUserId: typeof payload.linkUserId === 'string' ? payload.linkUserId : null,
       };
     } catch {
       throw new BadRequestException('Invalid or expired sign-in attempt');

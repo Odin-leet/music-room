@@ -7,8 +7,9 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import type { User } from '../users/user.entity';
-import { FacebookOAuthService } from './facebook-oauth.service';
-import { GoogleOAuthService } from './google-oauth.service';
+import { AccountLinksService } from './account-links.service';
+import { FacebookOAuthService, type FacebookProfile } from './facebook-oauth.service';
+import { GoogleOAuthService, type GoogleProfile } from './google-oauth.service';
 import { AccountExistsError, EmailRequiredError, OAuthLoginService } from './oauth-login.service';
 import { OAuthStateService, type OAuthProvider } from './oauth-state.service';
 
@@ -16,7 +17,9 @@ import { OAuthStateService, type OAuthProvider } from './oauth-state.service';
 //   /auth/<provider>/start    the app opens it in a browser tab -> provider's login page
 //   /auth/<provider>/callback the provider sends the browser back here with ?code&state;
 //                             we identify the user and send the browser back to the app
-//                             with a single-use login code (never tokens or profile data)
+//                             with a single-use login code (never tokens or profile data).
+//                             In link mode (state.linkUserId, started by POST
+//                             /auth/<provider>/link) it sends back ?link=<ticket> instead.
 @ApiTags('Social login (browser redirects)')
 @Controller('auth')
 export class SocialAuthController {
@@ -27,6 +30,7 @@ export class SocialAuthController {
     private readonly google: GoogleOAuthService,
     private readonly facebook: FacebookOAuthService,
     private readonly oauthLogin: OAuthLoginService,
+    private readonly links: AccountLinksService,
   ) {}
 
   @ApiOperation({ summary: 'Open in a browser tab: redirects to Google sign-in (OpenID Connect)' })
@@ -41,7 +45,7 @@ export class SocialAuthController {
   }
 
   @ApiOperation({ summary: 'Google sends the browser here (not for direct calls)' })
-  @ApiFoundResponse({ description: 'Redirects the browser back to the app with ?code= (single-use, 60 s) or ?error=account_exists|email_required|access_denied|…' })
+  @ApiFoundResponse({ description: 'Redirects the browser back to the app with ?code= (single-use, 60 s), ?link= (link mode: a 60 s ticket for POST /auth/link/confirm) or ?error=account_exists|email_required|access_denied|…' })
   @ApiBadRequestResponse({ description: 'Forged or expired state' })
   @Get('google/callback')
   @Redirect()
@@ -50,9 +54,11 @@ export class SocialAuthController {
     @Query('state') state?: string,
     @Query('error') error?: string,
   ) {
-    return this.finish('google', state, code, error, async (c) =>
-      this.oauthLogin.findOrCreateFromGoogle(await this.google.profileFromCode(c)),
-    );
+    return this.finish('google', state, code, error, {
+      profile: (c) => this.google.profileFromCode(c),
+      providerUserId: (p: GoogleProfile) => p.googleId,
+      signIn: (p: GoogleProfile) => this.oauthLogin.findOrCreateFromGoogle(p),
+    });
   }
 
   @ApiOperation({ summary: 'Open in a browser tab: redirects to Facebook login (OAuth 2.0)' })
@@ -67,7 +73,7 @@ export class SocialAuthController {
   }
 
   @ApiOperation({ summary: 'Facebook sends the browser here (not for direct calls)' })
-  @ApiFoundResponse({ description: 'Redirects the browser back to the app with ?code= (single-use, 60 s) or ?error=account_exists|email_required|access_denied|…' })
+  @ApiFoundResponse({ description: 'Redirects the browser back to the app with ?code= (single-use, 60 s), ?link= (link mode: a 60 s ticket for POST /auth/link/confirm) or ?error=account_exists|email_required|access_denied|…' })
   @ApiBadRequestResponse({ description: 'Forged or expired state' })
   @Get('facebook/callback')
   @Redirect()
@@ -76,21 +82,27 @@ export class SocialAuthController {
     @Query('state') state?: string,
     @Query('error') error?: string,
   ) {
-    return this.finish('facebook', state, code, error, async (c) =>
-      this.oauthLogin.findOrCreateFromFacebook(await this.facebook.profileFromCode(c)),
-    );
+    return this.finish('facebook', state, code, error, {
+      profile: (c) => this.facebook.profileFromCode(c),
+      providerUserId: (p: FacebookProfile) => p.facebookId,
+      signIn: (p: FacebookProfile) => this.oauthLogin.findOrCreateFromFacebook(p),
+    });
   }
 
   // Shared end of every provider's callback.
-  private async finish(
+  private async finish<P>(
     provider: OAuthProvider,
     state: string | undefined,
     code: string | undefined,
     error: string | undefined,
-    identify: (code: string) => Promise<User>,
+    flow: {
+      profile: (code: string) => Promise<P>;
+      providerUserId: (profile: P) => string;
+      signIn: (profile: P) => Promise<User>;
+    },
   ) {
     // Throws (400) on a forged/expired state: we don't even know where to redirect.
-    const { redirect, codeChallenge } = this.state.read(provider, state);
+    const { redirect, codeChallenge, linkUserId } = this.state.read(provider, state);
     const back = (params: Record<string, string>) => ({
       url: `${redirect}?${new URLSearchParams(params).toString()}`,
     });
@@ -99,7 +111,12 @@ export class SocialAuthController {
     if (error || !code) return back({ error: error ?? 'missing_code' });
 
     try {
-      const user = await identify(code);
+      const profile = await flow.profile(code);
+      // Link mode: nothing is linked here, the app confirms with the ticket.
+      if (linkUserId) {
+        return back({ link: this.links.createTicket(linkUserId, provider, flow.providerUserId(profile), codeChallenge) });
+      }
+      const user = await flow.signIn(profile);
       return back({ code: await this.oauthLogin.createLoginCode(user.id, codeChallenge) });
     } catch (err) {
       if (err instanceof AccountExistsError) return back({ error: 'account_exists' });

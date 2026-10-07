@@ -6,6 +6,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { MailModule } from '../mail/mail.module';
 import { User } from '../users/user.entity';
 import { UsersModule } from '../users/users.module';
+import { AccountLinksController } from './account-links.controller';
+import { AccountLinksService } from './account-links.service';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { EmailVerificationCode } from './email-verification-code.entity';
@@ -47,7 +49,7 @@ import { SocialAuthController } from './social-auth.controller';
       }),
     }),
   ],
-  controllers: [AuthController, SocialAuthController],
+  controllers: [AuthController, SocialAuthController, AccountLinksController],
   // JwtModule: the realtime gateway verifies access tokens with the same secret.
   exports: [JwtModule],
   providers: [
@@ -58,6 +60,7 @@ import { SocialAuthController } from './social-auth.controller';
     GoogleOAuthService,
     FacebookOAuthService,
     OAuthLoginService,
+    AccountLinksService,
     JwtStrategy,
   ],
 })

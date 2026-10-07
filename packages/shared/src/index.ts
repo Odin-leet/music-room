@@ -70,6 +70,14 @@ export interface UserSummary {
   bio: string;
 }
 
+// GET /users/me/identities — the ways you can sign in to your account.
+export interface SignInMethods {
+  email: string;
+  password: boolean; // false for accounts created with Google / Facebook (until a password is set)
+  google: boolean;
+  facebook: boolean;
+}
+
 // ---------- Friends ----------
 
 // GET /friends

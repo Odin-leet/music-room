@@ -1,12 +1,13 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { createHash, randomBytes, timingSafeEqual } from 'crypto';
+import { createHash, randomBytes } from 'crypto';
 import { DataSource, QueryFailedError, Repository } from 'typeorm';
 import { User } from '../users/user.entity';
 import { EmailVerificationService } from './email-verification.service';
 import type { FacebookProfile } from './facebook-oauth.service';
 import type { GoogleProfile } from './google-oauth.service';
 import { OAuthLoginCode } from './oauth-login-code.entity';
+import { pkceMatches } from './pkce';
 
 const LOGIN_CODE_TTL_MS = 60_000;
 // Postgres error code for a unique constraint violation.
@@ -146,9 +147,7 @@ export class OAuthLoginService {
     if (!row || new Date(row.expiresAt).getTime() <= Date.now()) throw invalid;
 
     // PKCE check: hashing the verifier must give the challenge sent at start.
-    const expected = Buffer.from(row.codeChallenge, 'base64url');
-    const actual = sha256(codeVerifier);
-    if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) throw invalid;
+    if (!pkceMatches(row.codeChallenge, codeVerifier)) throw invalid;
 
     const user = await this.users.findOneBy({ id: row.userId });
     if (!user) throw invalid;

@@ -8,7 +8,7 @@ import { DENY_MESSAGE, eventSubtitle, LICENSE_HINT } from '@/events/labels';
 import { getCurrentCoords, LocationError, type Coords } from '@/events/location';
 import { useSession } from '@/session/SessionProvider';
 import { spacing } from '@/theme';
-import { Button, Card, Screen, Text, TextField } from '@/ui';
+import { Button, Card, Screen, Text, TextField, ScreenHeader } from '@/ui';
 
 // Event details: who can vote, invite code, invites, delete.
 // The queue itself is the event's main screen (./index.tsx).
@@ -79,7 +79,7 @@ export default function EventInfoScreen() {
   return (
     <Screen>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Text variant="title">{event.name}</Text>
+        <ScreenHeader back title={event.name} />
         <Text variant="muted">
           {eventSubtitle(event)} · by {event.owner.displayName}
         </Text>
@@ -170,7 +170,6 @@ export default function EventInfoScreen() {
             }
           />
         ) : null}
-        <Button title="Back" variant="secondary" onPress={() => router.back()} />
       </ScrollView>
     </Screen>
   );

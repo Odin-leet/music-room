@@ -1,11 +1,12 @@
 import type { PlaylistTrackView, TrackSummary } from '@music-room/shared';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { FlatList, Image, Pressable, StyleSheet, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { ActivityIndicator, FlatList, StyleSheet } from 'react-native';
 import { ApiError } from '@/api/client';
 import { useSession } from '@/session/SessionProvider';
-import { colors, radius, spacing } from '@/theme';
-import { Button, Screen, Text, TextField } from '@/ui';
+import { colors, spacing } from '@/theme';
+import { Button, Screen, Text, TextField, ScreenHeader, Cover, ListItem } from '@/ui';
 
 const duration = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
@@ -69,7 +70,7 @@ export default function AddPlaylistTracksScreen() {
 
   return (
     <Screen>
-      <Text variant="title">Add tracks</Text>
+      <ScreenHeader back title="Add tracks" />
       <TextField
         label="Search"
         placeholder="Artist or song"
@@ -89,22 +90,24 @@ export default function AddPlaylistTracksScreen() {
         renderItem={({ item }) => {
           const state = rows[item.providerTrackId];
           return (
-            <Pressable
-              style={styles.row}
-              disabled={!!state}
-              onPress={() => void add(item)}
-              accessibilityRole="button"
-              accessibilityLabel={`Add ${item.title} by ${item.artist}`}
-            >
-              {item.coverUrl ? <Image source={{ uri: item.coverUrl }} style={styles.cover} /> : <View style={styles.cover} />}
-              <View style={styles.rowText}>
-                <Text numberOfLines={1}>{item.title}</Text>
-                <Text variant="muted" numberOfLines={1}>
-                  {item.artist} · {duration(item.durationSec)}
-                </Text>
-              </View>
-              <Text variant={state === 'added' ? 'success' : 'muted'}>{state ? label[state] : '+ Add'}</Text>
-            </Pressable>
+            <ListItem
+              title={item.title}
+              subtitle={state === 'already' ? `${item.artist} · already in the playlist` : `${item.artist} · ${duration(item.durationSec)}`}
+              leading={<Cover uri={item.coverUrl} size={48} />}
+              trailing={
+                state === 'adding' ? (
+                  <ActivityIndicator color={colors.accent} />
+                ) : (
+                  <Ionicons
+                    name={state === 'added' ? 'checkmark-circle' : state === 'already' ? 'checkmark-done-circle-outline' : 'add-circle'}
+                    size={28}
+                    color={state === 'added' ? colors.success : state === 'already' ? colors.textMuted : colors.accent}
+                  />
+                )
+              }
+              onPress={state ? undefined : () => void add(item)}
+              accessibilityLabel={`${state ? label[state] : "Add"}: ${item.title} by ${item.artist}`}
+            />
           );
         }}
       />
@@ -115,7 +118,4 @@ export default function AddPlaylistTracksScreen() {
 
 const styles = StyleSheet.create({
   list: { gap: spacing.sm },
-  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  cover: { width: 48, height: 48, borderRadius: radius.sm, backgroundColor: colors.surface },
-  rowText: { flex: 1 },
 });

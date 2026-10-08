@@ -1,12 +1,13 @@
 import type { TrackSummary } from '@music-room/shared';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { FlatList, Image, Pressable, StyleSheet, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { ActivityIndicator, FlatList, StyleSheet } from 'react-native';
 import { ApiError } from '@/api/client';
 import { getCurrentCoords, LocationError } from '@/events/location';
 import { useSession } from '@/session/SessionProvider';
-import { colors, radius, spacing } from '@/theme';
-import { Button, Screen, Text, TextField } from '@/ui';
+import { colors, spacing } from '@/theme';
+import { Button, Screen, Text, TextField, ScreenHeader, Cover, ListItem } from '@/ui';
 
 const duration = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
@@ -53,7 +54,7 @@ export default function AddTrackScreen() {
 
   return (
     <Screen>
-      <Text variant="title">Add a track</Text>
+      <ScreenHeader back title="Add a track" />
       <TextField
         label="Search"
         placeholder="Artist or song"
@@ -71,32 +72,26 @@ export default function AddTrackScreen() {
         contentContainerStyle={styles.list}
         keyboardShouldPersistTaps="handled"
         renderItem={({ item }) => (
-          <Pressable
-            style={styles.row}
-            disabled={adding !== null}
-            onPress={() => void add(item)}
-            accessibilityRole="button"
-            accessibilityLabel={`Add ${item.title} by ${item.artist}`}
-          >
-            {item.coverUrl ? <Image source={{ uri: item.coverUrl }} style={styles.cover} /> : <View style={styles.cover} />}
-            <View style={styles.rowText}>
-              <Text numberOfLines={1}>{item.title}</Text>
-              <Text variant="muted" numberOfLines={1}>
-                {item.artist} · {duration(item.durationSec)}
-              </Text>
-            </View>
-            <Text variant="muted">{adding === item.providerTrackId ? 'Adding…' : '+ Add'}</Text>
-          </Pressable>
+          <ListItem
+            title={item.title}
+            subtitle={`${item.artist} · ${duration(item.durationSec)}`}
+            leading={<Cover uri={item.coverUrl} size={48} />}
+            trailing={
+              adding === item.providerTrackId ? (
+                <ActivityIndicator color={colors.accent} />
+              ) : (
+                <Ionicons name="add-circle" size={28} color={colors.accent} />
+              )
+            }
+            onPress={adding === null ? () => void add(item) : undefined}
+            accessibilityLabel={`Suggest ${item.title} by ${item.artist}`}
+          />
         )}
       />
-      <Button title="Cancel" variant="secondary" onPress={() => router.back()} />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   list: { gap: spacing.sm },
-  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  cover: { width: 48, height: 48, borderRadius: radius.sm, backgroundColor: colors.surface },
-  rowText: { flex: 1 },
 });

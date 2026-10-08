@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Alert } from 'react-native';
 import { builtInApiUrl, getApiUrl, normalizeApiUrl, saveApiUrl } from '@/config';
 import { useSession } from '@/session/SessionProvider';
-import { Button, Card, Screen, Text, TextField } from '@/ui';
+import { Button, Card, Screen, Text, TextField, ScreenHeader } from '@/ui';
 
 const TEST_TIMEOUT_MS = 5_000;
 
@@ -67,7 +67,7 @@ export default function ServerSettingsScreen() {
 
   return (
     <Screen form>
-      <Text variant="title">Server settings</Text>
+      <ScreenHeader back title="Server settings" />
       <Text variant="muted">Now using: {getApiUrl() || 'no address set'}</Text>
 
       <TextField
@@ -103,7 +103,6 @@ export default function ServerSettingsScreen() {
           onPress={() => confirm(null)}
         />
       ) : null}
-      <Button title="Cancel" variant="secondary" onPress={() => router.back()} />
     </Screen>
   );
 }

@@ -5,7 +5,7 @@ import { noErrors, toFormErrors } from '@/api/formErrors';
 import { LICENSE_HINT, LICENSE_LABEL } from '@/events/labels';
 import { getCurrentCoords, LocationError } from '@/events/location';
 import { useSession } from '@/session/SessionProvider';
-import { Button, ChoiceChips, Screen, Text, TextField } from '@/ui';
+import { Button, ChoiceChips, Screen, Text, TextField, ScreenHeader } from '@/ui';
 
 const RADII = [50, 200, 500, 2000] as const;
 const HOURS = [1, 3, 6, 24] as const;
@@ -53,7 +53,7 @@ export default function NewEventScreen() {
 
   return (
     <Screen form>
-      <Text variant="title">New event</Text>
+      <ScreenHeader back title="New event" />
       <TextField
         label="Name"
         placeholder="Friday party"
@@ -107,7 +107,6 @@ export default function NewEventScreen() {
 
       {errors.form ? <Text variant="error">{errors.form}</Text> : null}
       <Button title="Create event" loading={submitting} disabled={!name.trim()} onPress={() => void submit()} />
-      <Button title="Cancel" variant="secondary" onPress={() => router.back()} />
     </Screen>
   );
 }

@@ -8,7 +8,7 @@ import { EDIT_DENY_MESSAGE, PLAYLIST_LICENSE_HINT, playlistSubtitle } from '@/pl
 import { PlaylistSettingsChips } from '@/playlists/PlaylistSettingsChips';
 import { useSession } from '@/session/SessionProvider';
 import { spacing } from '@/theme';
-import { Button, Card, Screen, Text, TextField } from '@/ui';
+import { Button, Card, Screen, Text, TextField, ScreenHeader } from '@/ui';
 
 // Playlist details: who can edit, invite code, invites, settings, delete.
 // The tracks themselves are the playlist's main screen (./index.tsx).
@@ -71,7 +71,7 @@ export default function PlaylistInfoScreen() {
   return (
     <Screen>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Text variant="title">{playlist.name}</Text>
+        <ScreenHeader back title={playlist.name} />
         <Text variant="muted">
           {playlistSubtitle(playlist)} · by {playlist.owner.displayName}
         </Text>
@@ -144,7 +144,6 @@ export default function PlaylistInfoScreen() {
             }
           />
         ) : null}
-        <Button title="Back" variant="secondary" onPress={() => router.back()} />
       </ScrollView>
     </Screen>
   );

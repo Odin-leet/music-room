@@ -3,7 +3,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { noErrors, toFormErrors } from '@/api/formErrors';
 import { useSession } from '@/session/SessionProvider';
-import { Button, Screen, Text, TextField } from '@/ui';
+import { Button, Screen, Text, TextField, ScreenHeader } from '@/ui';
 
 export default function JoinPlaylistScreen() {
   const { authedApi } = useSession();
@@ -32,8 +32,8 @@ export default function JoinPlaylistScreen() {
   };
 
   return (
-    <Screen centered form>
-      <Text variant="title">Join a playlist</Text>
+    <Screen form>
+      <ScreenHeader back title="Join a playlist" />
       <Text variant="muted">Enter the 8-character code the owner shared with you.</Text>
       <TextField
         label="Invite code"
@@ -49,7 +49,6 @@ export default function JoinPlaylistScreen() {
       />
       {errors.form ? <Text variant="error">{errors.form}</Text> : null}
       <Button title="Join" loading={joining} disabled={!canJoin} onPress={() => void join()} />
-      <Button title="Cancel" variant="secondary" onPress={() => router.back()} />
     </Screen>
   );
 }

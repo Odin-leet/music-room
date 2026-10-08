@@ -3,7 +3,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { noErrors, toFormErrors } from '@/api/formErrors';
 import { useSession } from '@/session/SessionProvider';
-import { Button, Screen, Text, TextField } from '@/ui';
+import { Button, Screen, Text, TextField, ScreenHeader } from '@/ui';
 
 export default function JoinEventScreen() {
   const { authedApi } = useSession();
@@ -29,8 +29,8 @@ export default function JoinEventScreen() {
   };
 
   return (
-    <Screen centered form>
-      <Text variant="title">Join an event</Text>
+    <Screen form>
+      <ScreenHeader back title="Join an event" />
       <Text variant="muted">Enter the 8-character code the organiser shared with you.</Text>
       <TextField
         label="Invite code"
@@ -46,7 +46,6 @@ export default function JoinEventScreen() {
       />
       {errors.form ? <Text variant="error">{errors.form}</Text> : null}
       <Button title="Join" loading={joining} disabled={!canJoin} onPress={() => void join()} />
-      <Button title="Cancel" variant="secondary" onPress={() => router.back()} />
     </Screen>
   );
 }

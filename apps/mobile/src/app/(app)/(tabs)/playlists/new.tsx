@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { noErrors, toFormErrors } from '@/api/formErrors';
 import { PlaylistSettingsChips } from '@/playlists/PlaylistSettingsChips';
 import { useSession } from '@/session/SessionProvider';
-import { Button, Screen, Text, TextField } from '@/ui';
+import { Button, Screen, Text, TextField, ScreenHeader } from '@/ui';
 
 export default function NewPlaylistScreen() {
   const { authedApi } = useSession();
@@ -33,7 +33,7 @@ export default function NewPlaylistScreen() {
 
   return (
     <Screen form>
-      <Text variant="title">New playlist</Text>
+      <ScreenHeader back title="New playlist" />
       <TextField
         label="Name"
         placeholder="Road trip"
@@ -58,7 +58,6 @@ export default function NewPlaylistScreen() {
       />
       {errors.form ? <Text variant="error">{errors.form}</Text> : null}
       <Button title="Create playlist" loading={submitting} disabled={!name.trim()} onPress={() => void submit()} />
-      <Button title="Cancel" variant="secondary" onPress={() => router.back()} />
     </Screen>
   );
 }

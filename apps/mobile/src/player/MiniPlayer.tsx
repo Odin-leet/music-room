@@ -43,7 +43,7 @@ export function MiniPlayer() {
 
 const styles = StyleSheet.create({
   wrap: { backgroundColor: colors.surface, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
-  progress: { height: 2, backgroundColor: colors.primary },
+  progress: { height: 2, backgroundColor: colors.accent },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
   cover: { width: 40, height: 40, borderRadius: radius.sm, backgroundColor: colors.border },
   text: { flex: 1 },

@@ -1,7 +1,7 @@
 import { Text as RNText, StyleSheet, type TextProps } from 'react-native';
 import { colors, font } from '@/theme';
 
-type Variant = 'title' | 'body' | 'muted' | 'error' | 'success';
+type Variant = 'title' | 'heading' | 'body' | 'muted' | 'caption' | 'error' | 'success';
 
 type Props = TextProps & { variant?: Variant };
 
@@ -12,8 +12,10 @@ export function Text({ variant = 'body', style, ...rest }: Props) {
 const styles = StyleSheet.create({
   base: { color: colors.text, fontSize: font.size.md },
   title: { fontSize: font.size.xl, fontWeight: font.weight.bold },
+  heading: { fontSize: font.size.lg, fontWeight: font.weight.bold },
   body: {},
   muted: { color: colors.textMuted, fontSize: font.size.sm },
+  caption: { color: colors.textMuted, fontSize: 12 },
   error: { color: colors.danger, fontSize: font.size.sm },
-  success: { color: colors.success, fontSize: font.size.lg, fontWeight: font.weight.medium },
+  success: { color: colors.success, fontSize: font.size.md, fontWeight: font.weight.medium },
 });

@@ -4,6 +4,7 @@ import { noErrors, toFormErrors } from '@/api/formErrors';
 import { useCurrentUser } from '@/session/CurrentUserProvider';
 import { useSession } from '@/session/SessionProvider';
 import { Button, Screen, Text, TextField } from '@/ui';
+import { BrandHeader } from '@/components/BrandHeader';
 
 const RESEND_COOLDOWN_S = 60;
 
@@ -62,7 +63,7 @@ export default function VerifyEmailScreen() {
 
   return (
     <Screen centered form>
-      <Text variant="title">Check your email</Text>
+      <BrandHeader title="Check your email" />
       <Text variant="muted">We sent a 6-digit code to {email}. It expires in 15 minutes.</Text>
 
       <TextField

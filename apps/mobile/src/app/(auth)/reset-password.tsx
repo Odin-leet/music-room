@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { TextInput } from 'react-native';
 import { api } from '@/api/client';
 import { noErrors, toFormErrors } from '@/api/formErrors';
-import { Button, Screen, Text, TextField } from '@/ui';
+import { Button, Screen, Text, TextField, ScreenHeader } from '@/ui';
 
 const RESEND_COOLDOWN_S = 60;
 
@@ -54,8 +54,8 @@ export default function ResetPasswordScreen() {
   };
 
   return (
-    <Screen centered form>
-      <Text variant="title">Reset password</Text>
+    <Screen form>
+      <ScreenHeader back title="Reset password" />
       <Text variant="muted">
         If {email} has an account, we sent it a 6-digit code. It expires in 15 minutes.
       </Text>

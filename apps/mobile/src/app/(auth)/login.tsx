@@ -6,6 +6,7 @@ import { SocialSignInButton } from '@/components/SocialSignInButton';
 import { getApiUrl } from '@/config';
 import { useSession } from '@/session/SessionProvider';
 import { Button, OrDivider, Screen, Text, TextField } from '@/ui';
+import { BrandHeader } from '@/components/BrandHeader';
 
 export default function LoginScreen() {
   const { signIn } = useSession();
@@ -35,7 +36,7 @@ export default function LoginScreen() {
 
   return (
     <Screen centered form>
-      <Text variant="title">Log in</Text>
+      <BrandHeader title="Welcome back" subtitle="Vote on the next track, build playlists together." />
       {params.reset === '1' ? (
         <Text variant="success">Password changed. Log in with your new password.</Text>
       ) : null}

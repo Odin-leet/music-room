@@ -2,7 +2,7 @@ import { Link, router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { api } from '@/api/client';
 import { noErrors, toFormErrors } from '@/api/formErrors';
-import { Button, Screen, Text, TextField } from '@/ui';
+import { Button, Screen, Text, TextField, ScreenHeader } from '@/ui';
 
 export default function ForgotPasswordScreen() {
   // Prefilled when coming from the login screen.
@@ -29,8 +29,8 @@ export default function ForgotPasswordScreen() {
   };
 
   return (
-    <Screen centered form>
-      <Text variant="title">Forgot password</Text>
+    <Screen form>
+      <ScreenHeader back title="Forgot password" />
       <Text variant="muted">
         Enter your account email. If it exists, we&apos;ll send a 6-digit code to reset your password.
       </Text>

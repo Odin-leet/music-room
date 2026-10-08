@@ -5,6 +5,7 @@ import { noErrors, toFormErrors } from '@/api/formErrors';
 import { SocialSignInButton } from '@/components/SocialSignInButton';
 import { useSession } from '@/session/SessionProvider';
 import { Button, OrDivider, Screen, Text, TextField } from '@/ui';
+import { BrandHeader } from '@/components/BrandHeader';
 
 export default function RegisterScreen() {
   const { register } = useSession();
@@ -36,7 +37,7 @@ export default function RegisterScreen() {
 
   return (
     <Screen centered form>
-      <Text variant="title">Create account</Text>
+      <BrandHeader title="Create your account" subtitle="One account for every party and playlist." />
 
       <TextField
         label="Display name"

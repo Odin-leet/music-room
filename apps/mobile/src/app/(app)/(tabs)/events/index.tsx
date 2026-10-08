@@ -1,12 +1,13 @@
 import type { EventView } from '@music-room/shared';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { FlatList, RefreshControl, StyleSheet } from 'react-native';
 import { ApiError } from '@/api/client';
 import { eventSubtitle } from '@/events/labels';
 import { useSession } from '@/session/SessionProvider';
 import { colors, spacing } from '@/theme';
-import { Button, Card, Screen, Text } from '@/ui';
+import { Cover, EmptyState, IconButton, ListItem, Screen, ScreenHeader, Text } from '@/ui';
 
 // Public events + the ones I belong to.
 export default function EventsScreen() {
@@ -33,15 +34,15 @@ export default function EventsScreen() {
 
   return (
     <Screen>
-      <Text variant="title">Events</Text>
-      <View style={styles.actions}>
-        <View style={styles.action}>
-          <Button title="Create" onPress={() => router.push('/events/new')} />
-        </View>
-        <View style={styles.action}>
-          <Button title="Join with code" variant="secondary" onPress={() => router.push('/events/join')} />
-        </View>
-      </View>
+      <ScreenHeader
+        title="Events"
+        right={
+          <>
+            <IconButton icon="key-outline" label="Join with a code" variant="tonal" onPress={() => router.push('/events/join')} />
+            <IconButton icon="add" label="Create an event" variant="filled" onPress={() => router.push('/events/new')} />
+          </>
+        }
+      />
       {error ? <Text variant="error">{error}</Text> : null}
 
       <FlatList
@@ -60,21 +61,24 @@ export default function EventsScreen() {
           />
         }
         ListEmptyComponent={
-          events ? <Text variant="muted">No events yet. Create one, or join with a code.</Text> : null
+          events ? (
+            <EmptyState
+              icon="people-outline"
+              title="No events yet"
+              text="Create one, or join a friend's with its code."
+              action="Create an event"
+              onAction={() => router.push('/events/new')}
+            />
+          ) : null
         }
         renderItem={({ item }) => (
-          <Pressable
+          <ListItem
+            title={`${item.visibility === 'private' ? '🔒 ' : ''}${item.name}`}
+            subtitle={`${eventSubtitle(item)} · by ${item.owner.displayName}`}
+            leading={<Cover uri={item.cover} size={56} icon="people" />}
+            trailing={<Ionicons name="chevron-forward" size={18} color={colors.textMuted} />}
             onPress={() => router.push({ pathname: '/events/[id]', params: { id: item.id } })}
-            accessibilityRole="button"
-            accessibilityLabel={`Open event ${item.name}`}
-          >
-            <Card>
-              <Text numberOfLines={1}>{item.name}</Text>
-              <Text variant="muted" numberOfLines={1}>
-                {eventSubtitle(item)} · by {item.owner.displayName}
-              </Text>
-            </Card>
-          </Pressable>
+          />
         )}
       />
     </Screen>
@@ -82,7 +86,5 @@ export default function EventsScreen() {
 }
 
 const styles = StyleSheet.create({
-  actions: { flexDirection: 'row', gap: spacing.md },
-  action: { flex: 1 },
-  list: { gap: spacing.md },
+  list: { gap: spacing.xs, paddingBottom: spacing.lg },
 });

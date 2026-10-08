@@ -1,12 +1,13 @@
 import type { PlaylistView } from '@music-room/shared';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { FlatList, RefreshControl, StyleSheet } from 'react-native';
 import { ApiError } from '@/api/client';
 import { playlistSubtitle } from '@/playlists/labels';
 import { useSession } from '@/session/SessionProvider';
 import { colors, spacing } from '@/theme';
-import { Button, Card, Screen, Text } from '@/ui';
+import { Cover, EmptyState, IconButton, ListItem, Screen, ScreenHeader, Text } from '@/ui';
 
 // Public playlists + the ones I belong to, most recently edited first.
 export default function PlaylistsScreen() {
@@ -33,15 +34,15 @@ export default function PlaylistsScreen() {
 
   return (
     <Screen>
-      <Text variant="title">Playlists</Text>
-      <View style={styles.actions}>
-        <View style={styles.action}>
-          <Button title="Create" onPress={() => router.push('/playlists/new')} />
-        </View>
-        <View style={styles.action}>
-          <Button title="Join with code" variant="secondary" onPress={() => router.push('/playlists/join')} />
-        </View>
-      </View>
+      <ScreenHeader
+        title="Playlists"
+        right={
+          <>
+            <IconButton icon="key-outline" label="Join with a code" variant="tonal" onPress={() => router.push('/playlists/join')} />
+            <IconButton icon="add" label="Create a playlist" variant="filled" onPress={() => router.push('/playlists/new')} />
+          </>
+        }
+      />
       {error ? <Text variant="error">{error}</Text> : null}
 
       <FlatList
@@ -60,24 +61,24 @@ export default function PlaylistsScreen() {
           />
         }
         ListEmptyComponent={
-          playlists ? <Text variant="muted">No playlists yet. Create one, or join with a code.</Text> : null
+          playlists ? (
+            <EmptyState
+              icon="musical-notes-outline"
+              title="No playlists yet"
+              text="Create one, or join a friend's with its code."
+              action="Create a playlist"
+              onAction={() => router.push('/playlists/new')}
+            />
+          ) : null
         }
         renderItem={({ item }) => (
-          <Pressable
+          <ListItem
+            title={`${item.visibility === 'private' ? '🔒 ' : ''}${item.name}`}
+            subtitle={`${playlistSubtitle(item)} · by ${item.owner.displayName}`}
+            leading={<Cover uris={item.covers} uri={item.covers[0]} size={56} icon="musical-notes" />}
+            trailing={<Ionicons name="chevron-forward" size={18} color={colors.textMuted} />}
             onPress={() => router.push({ pathname: '/playlists/[id]', params: { id: item.id } })}
-            accessibilityRole="button"
-            accessibilityLabel={`Open playlist ${item.name}`}
-          >
-            <Card>
-              <Text numberOfLines={1}>
-                {item.visibility === 'private' ? '🔒 ' : ''}
-                {item.name}
-              </Text>
-              <Text variant="muted" numberOfLines={1}>
-                {playlistSubtitle(item)} · by {item.owner.displayName}
-              </Text>
-            </Card>
-          </Pressable>
+          />
         )}
       />
     </Screen>
@@ -85,7 +86,5 @@ export default function PlaylistsScreen() {
 }
 
 const styles = StyleSheet.create({
-  actions: { flexDirection: 'row', gap: spacing.md },
-  action: { flex: 1 },
-  list: { gap: spacing.md },
+  list: { gap: spacing.xs, paddingBottom: spacing.lg },
 });

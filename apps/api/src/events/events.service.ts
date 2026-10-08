@@ -68,18 +68,21 @@ export class EventsService {
       .innerJoinAndSelect('e.owner', 'owner')
       .leftJoin(EventMember, 'm', 'm."eventId" = e.id AND m."userId" = :userId', { userId })
       .addSelect('m.role', 'myRole')
+      .addSelect(COVER_SQL('e.id'), 'cover')
       .where(`e.visibility = 'public' OR m."userId" IS NOT NULL`)
       .orderBy('e.createdAt', 'DESC')
       .limit(100)
       .getRawAndEntities();
-    return rows.entities.map((event, i) =>
-      toView(event as Event & { owner: User }, (rows.raw[i] as { myRole: MemberRole | null }).myRole, {}),
-    );
+    return rows.entities.map((event, i) => {
+      const raw = rows.raw[i] as { myRole: MemberRole | null; cover: string | null };
+      return toView(event as Event & { owner: User }, raw.myRole, { cover: raw.cover });
+    });
   }
 
   async view(eventId: string, userId: string, location?: Location | null): Promise<EventView> {
     const { event, role } = await this.loadVisible(eventId, userId);
-    return toView(event, role, { location });
+    const [row] = (await this.dataSource.query(`SELECT ${COVER_SQL('$1')} AS cover`, [event.id])) as { cover: string | null }[];
+    return toView(event, role, { location, cover: row?.cover ?? null });
   }
 
   async update(eventId: string, userId: string, dto: UpdateEventDto): Promise<EventView> {
@@ -220,12 +223,20 @@ export class EventsService {
   }
 }
 
+// The picture for an event in lists: the track playing now, else the one
+// that would play next (same ranking as the queue). Null if no track has a cover.
+const COVER_SQL = (eventId: string) => `(
+  SELECT t."coverUrl" FROM event_tracks t
+   WHERE t."eventId" = ${eventId} AND t.status IN ('playing', 'queued') AND t."coverUrl" IS NOT NULL
+   ORDER BY (t.status = 'playing') DESC, t.score DESC, t."suggestedAt" ASC
+   LIMIT 1)`;
+
 const nullGeo = () => ({ geoLat: null, geoLng: null, geoRadiusM: null, startsAt: null, endsAt: null });
 
 function toView(
   event: Event & { owner: User },
   role: MemberRole | null,
-  { location }: { location?: Location | null },
+  { location, cover = null }: { location?: Location | null; cover?: string | null },
 ): EventView {
   return {
     id: event.id,
@@ -247,6 +258,7 @@ function toView(
     myRole: role,
     inviteCode: role ? event.inviteCode : null,
     participation: canParticipate(event, role, { now: new Date(), location }),
+    cover,
     createdAt: event.createdAt.toISOString(),
   };
 }

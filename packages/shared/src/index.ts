@@ -165,6 +165,8 @@ export interface EventView {
   inviteCode: string | null;
   // For license 'geo' this depends on your location: pass ?lat=&lng=.
   participation: Participation;
+  // A picture for lists: the playing track's cover, else the next one's.
+  cover: string | null;
   createdAt: string;
 }
 
@@ -248,6 +250,8 @@ export interface PlaylistView {
   inviteCode: string | null; // members only
   canEdit: EditPermission;
   trackCount: number;
+  // Up to 4 covers of the first tracks, in order (a 2x2 mosaic in lists).
+  covers: string[];
   createdAt: string;
   updatedAt: string;
 }

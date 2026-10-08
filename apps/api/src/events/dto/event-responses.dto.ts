@@ -90,6 +90,10 @@ export class EventViewDto implements EventView {
   @ApiProperty({ type: ParticipationDto })
   participation: Participation;
 
+  /** A picture for lists: the playing track's cover, else the next one's (null if none has one). */
+  @ApiProperty({ type: String, nullable: true })
+  cover: string | null;
+
   @ApiProperty({ format: 'date-time' })
   createdAt: string;
 }

@@ -51,6 +51,9 @@ export class PlaylistViewDto implements PlaylistView {
 
   trackCount: number;
 
+  /** Up to 4 covers of the first tracks, in playlist order (a 2x2 mosaic in lists). */
+  covers: string[];
+
   @ApiProperty({ format: 'date-time' })
   createdAt: string;
 

@@ -62,20 +62,24 @@ export class PlaylistsService {
       .leftJoin(PlaylistMember, 'm', 'm."playlistId" = p.id AND m."userId" = :userId', { userId })
       .addSelect('m.role', 'myRole')
       .addSelect((q) => q.select('count(*)::int').from(PlaylistTrack, 't').where('t."playlistId" = p.id'), 'trackCount')
+      .addSelect(COVERS_SQL('p.id'), 'covers')
       .where(`p.visibility = 'public' OR m."userId" IS NOT NULL`)
       .orderBy('p.updatedAt', 'DESC')
       .limit(100)
       .getRawAndEntities();
     return rows.entities.map((p, i) => {
-      const raw = rows.raw[i] as { myRole: MemberRole | null; trackCount: number };
-      return toView(p as Playlist & { owner: User }, raw.myRole, raw.trackCount);
+      const raw = rows.raw[i] as { myRole: MemberRole | null; trackCount: number; covers: string[] | null };
+      return toView(p as Playlist & { owner: User }, raw.myRole, raw.trackCount, raw.covers ?? []);
     });
   }
 
   async view(playlistId: string, userId: string): Promise<PlaylistView> {
     const { playlist, role } = await this.loadVisible(playlistId, userId);
-    const trackCount = await this.tracks.countBy({ playlistId });
-    return toView(playlist, role, trackCount);
+    const [trackCount, [row]] = await Promise.all([
+      this.tracks.countBy({ playlistId }),
+      this.dataSource.query(`SELECT ${COVERS_SQL('$1')} AS covers`, [playlistId]) as Promise<{ covers: string[] }[]>,
+    ]);
+    return toView(playlist, role, trackCount, row?.covers ?? []);
   }
 
   async update(playlistId: string, userId: string, dto: UpdatePlaylistDto): Promise<PlaylistView> {
@@ -161,7 +165,19 @@ export class PlaylistsService {
   }
 }
 
-function toView(playlist: Playlist & { owner: User }, role: MemberRole | null, trackCount: number): PlaylistView {
+// Up to 4 covers of the first tracks, in playlist order (a 2x2 mosaic in the app).
+const COVERS_SQL = (playlistId: string) => `ARRAY(
+  SELECT t."coverUrl" FROM playlist_tracks t
+   WHERE t."playlistId" = ${playlistId} AND t."coverUrl" IS NOT NULL
+   ORDER BY t.position, t.id
+   LIMIT 4)`;
+
+function toView(
+  playlist: Playlist & { owner: User },
+  role: MemberRole | null,
+  trackCount: number,
+  covers: string[] = [],
+): PlaylistView {
   return {
     id: playlist.id,
     name: playlist.name,
@@ -173,6 +189,7 @@ function toView(playlist: Playlist & { owner: User }, role: MemberRole | null, t
     inviteCode: role ? playlist.inviteCode : null,
     canEdit: canEdit(playlist, role),
     trackCount,
+    covers,
     createdAt: playlist.createdAt.toISOString(),
     updatedAt: playlist.updatedAt.toISOString(),
   };

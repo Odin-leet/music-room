@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import type { EventView, PlaylistView } from '@music-room/shared';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
@@ -7,13 +8,14 @@ import { playlistSubtitle } from '@/playlists/labels';
 import { useIncomingRequests } from '@/profile/MeRealtimeProvider';
 import { useCurrentUser } from '@/session/CurrentUserProvider';
 import { useSession } from '@/session/SessionProvider';
-import { colors, spacing } from '@/theme';
-import { Button, Card, Screen, Text } from '@/ui';
+import { colors, radius, spacing } from '@/theme';
+import { Avatar, Cover, type IconName, Screen, ScreenHeader, SectionHeader, Text } from '@/ui';
 
-const SHOW = 3; // items per section; "See all" opens the tab
+const SHOW = 8; // cards per row; "See all" opens the tab
+const CARD = 148;
 
-// What's going on: friend requests waiting, events to join, my playlists.
-// Each section links to its tab.
+// What's going on: friend requests waiting, events to join, playlists.
+// Each row of cards links to its tab.
 export default function HomeScreen() {
   const { authedApi } = useSession();
   const { me } = useCurrentUser();
@@ -28,7 +30,7 @@ export default function HomeScreen() {
       authedApi<PlaylistView[]>('/playlists').catch(() => null),
     ]);
     setEvents(e);
-    // "Mine" first: the ones I own or joined, then public ones.
+    // Mine first (owned or joined), then public ones.
     setPlaylists(p ? [...p].sort((a, b) => Number(!!b.myRole) - Number(!!a.myRole)) : null);
   }, [authedApi]);
 
@@ -44,6 +46,7 @@ export default function HomeScreen() {
     <Screen>
       <ScrollView
         contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -56,85 +59,129 @@ export default function HomeScreen() {
           />
         }
       >
-        <Text variant="title">Hi{name ? `, ${name}` : ''}</Text>
+        <ScreenHeader
+          title={name ? `Hi, ${name.split(' ')[0]}` : 'Music Room'}
+          subtitle="What are we listening to?"
+          right={
+            <Pressable onPress={() => router.push('/profile')} accessibilityRole="button" accessibilityLabel="My profile">
+              <Avatar name={name || '?'} size={40} />
+            </Pressable>
+          }
+        />
 
         {incoming ? (
-          <Pressable onPress={() => router.push('/people/friends')} accessibilityRole="button">
-            <Card>
-              <Text>
-                {incoming} friend request{incoming > 1 ? 's' : ''} waiting
-              </Text>
-              <Text variant="muted">Tap to answer</Text>
-            </Card>
+          <Pressable
+            onPress={() => router.push('/people/friends')}
+            accessibilityRole="button"
+            style={({ pressed }) => [styles.banner, pressed && styles.pressed]}
+          >
+            <Ionicons name="person-add" size={20} color={colors.onPrimary} />
+            <Text style={styles.bannerText}>
+              {incoming} friend request{incoming > 1 ? 's' : ''} waiting
+            </Text>
+            <Ionicons name="chevron-forward" size={18} color={colors.onPrimary} />
           </Pressable>
         ) : null}
 
-        <Section title="Events" onSeeAll={() => router.push('/events')}>
-          {events?.length ? (
-            events.slice(0, SHOW).map((e) => (
-              <Row
+        <View>
+          <SectionHeader title="Events" action="See all" onAction={() => router.push('/events')} />
+          <Row>
+            {(events ?? []).slice(0, SHOW).map((e) => (
+              <HomeCard
                 key={e.id}
                 title={e.name}
                 subtitle={eventSubtitle(e)}
+                cover={<Cover uri={e.cover} size={CARD} icon="people" />}
                 onPress={() => router.push({ pathname: '/events/[id]', params: { id: e.id } })}
               />
-            ))
-          ) : events ? (
-            <Text variant="muted">No events yet.</Text>
-          ) : null}
-          <Button title="Create an event" variant="secondary" onPress={() => router.push('/events/new')} />
-        </Section>
+            ))}
+            <NewCard icon="add" label="New event" onPress={() => router.push('/events/new')} />
+          </Row>
+        </View>
 
-        <Section title="Playlists" onSeeAll={() => router.push('/playlists')}>
-          {playlists?.length ? (
-            playlists.slice(0, SHOW).map((p) => (
-              <Row
+        <View>
+          <SectionHeader title="Playlists" action="See all" onAction={() => router.push('/playlists')} />
+          <Row>
+            {(playlists ?? []).slice(0, SHOW).map((p) => (
+              <HomeCard
                 key={p.id}
                 title={p.name}
                 subtitle={playlistSubtitle(p)}
+                cover={<Cover uris={p.covers} uri={p.covers[0]} size={CARD} icon="musical-notes" />}
                 onPress={() => router.push({ pathname: '/playlists/[id]', params: { id: p.id } })}
               />
-            ))
-          ) : playlists ? (
-            <Text variant="muted">No playlists yet.</Text>
-          ) : null}
-          <Button title="Create a playlist" variant="secondary" onPress={() => router.push('/playlists/new')} />
-        </Section>
+            ))}
+            <NewCard icon="add" label="New playlist" onPress={() => router.push('/playlists/new')} />
+          </Row>
+        </View>
       </ScrollView>
     </Screen>
   );
 }
 
-function Section({ title, onSeeAll, children }: { title: string; onSeeAll: () => void; children: React.ReactNode }) {
+// A horizontal row of cards, bleeding to the screen edges.
+function Row({ children }: { children: React.ReactNode }) {
   return (
-    <View style={styles.section}>
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>{title}</Text>
-        <Pressable onPress={onSeeAll} hitSlop={8} accessibilityRole="button" accessibilityLabel={`See all ${title}`}>
-          <Text variant="muted">See all</Text>
-        </Pressable>
-      </View>
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row} style={styles.rowScroll}>
       {children}
-    </View>
+    </ScrollView>
   );
 }
 
-function Row({ title, subtitle, onPress }: { title: string; subtitle: string; onPress: () => void }) {
+function HomeCard({ title, subtitle, cover, onPress }: { title: string; subtitle: string; cover: React.ReactNode; onPress: () => void }) {
   return (
-    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={`Open ${title}`}>
-      <Card>
-        <Text numberOfLines={1}>{title}</Text>
-        <Text variant="muted" numberOfLines={1}>
-          {subtitle}
-        </Text>
-      </Card>
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`${title}, ${subtitle}`}
+      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+    >
+      {cover}
+      <Text numberOfLines={1} style={styles.cardTitle}>
+        {title}
+      </Text>
+      <Text variant="caption" numberOfLines={2}>
+        {subtitle}
+      </Text>
+    </Pressable>
+  );
+}
+
+function NewCard({ icon, label, onPress }: { icon: IconName; label: string; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label} style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
+      <View style={styles.newCover}>
+        <Ionicons name={icon} size={40} color={colors.accent} />
+      </View>
+      <Text style={styles.cardTitle}>{label}</Text>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   content: { gap: spacing.xl, paddingBottom: spacing.xl },
-  section: { gap: spacing.sm },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
-  sectionTitle: { fontSize: 18, fontWeight: '700' },
+  banner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    padding: spacing.lg,
+    borderRadius: radius.lg,
+    backgroundColor: colors.primary,
+  },
+  bannerText: { flex: 1, color: colors.onPrimary, fontWeight: '700' },
+  rowScroll: { marginHorizontal: -spacing.xl, marginTop: spacing.md },
+  row: { gap: spacing.md, paddingHorizontal: spacing.xl },
+  card: { width: CARD, gap: 4 },
+  cardTitle: { fontWeight: '700', marginTop: spacing.xs },
+  newCover: {
+    width: CARD,
+    height: CARD,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: colors.surfaceRaised,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pressed: { opacity: 0.7 },
 });

@@ -1,5 +1,6 @@
 import { Stack } from 'expo-router';
 import { ActivityIndicator } from 'react-native';
+import { PlayerProvider } from '@/player/PlayerProvider';
 import { MeRealtimeProvider } from '@/profile/MeRealtimeProvider';
 import { CurrentUserProvider, useCurrentUser } from '@/session/CurrentUserProvider';
 import { useSession } from '@/session/SessionProvider';
@@ -13,7 +14,10 @@ export default function AppLayout() {
     <CurrentUserProvider>
       {/* One /me socket for the whole signed-in area (friend notifications). */}
       <MeRealtimeProvider>
-        <AppNavigator />
+        {/* One audio player for the whole app: music keeps playing across screens. */}
+        <PlayerProvider>
+          <AppNavigator />
+        </PlayerProvider>
       </MeRealtimeProvider>
     </CurrentUserProvider>
   );
@@ -45,11 +49,7 @@ function AppNavigator() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Protected guard={verified}>
-        <Stack.Screen name="index" />
-        <Stack.Screen name="events" />
-        <Stack.Screen name="playlists" />
-        <Stack.Screen name="profile" />
-        <Stack.Screen name="people" />
+        <Stack.Screen name="(tabs)" />
       </Stack.Protected>
       <Stack.Protected guard={!verified}>
         <Stack.Screen name="verify-email" />

@@ -84,7 +84,6 @@ export default function MyProfileScreen() {
     return (
       <Screen centered>
         <Text variant={loadError ? 'error' : 'muted'}>{loadError ?? 'Loading…'}</Text>
-        <Button title="Back" variant="secondary" onPress={() => router.back()} />
       </Screen>
     );
   }
@@ -251,8 +250,25 @@ export default function MyProfileScreen() {
 
       <SignInMethodsCard />
 
-      <Button title="Back" variant="secondary" onPress={() => router.back()} />
+      <Button title="Server settings" variant="secondary" onPress={() => router.push('/settings')} />
+      <LogOutButton />
     </Screen>
+  );
+}
+
+function LogOutButton() {
+  const { signOut } = useSession();
+  const [busy, setBusy] = useState(false);
+  return (
+    <Button
+      title="Log out"
+      variant="secondary"
+      loading={busy}
+      onPress={() => {
+        setBusy(true);
+        void signOut();
+      }}
+    />
   );
 }
 

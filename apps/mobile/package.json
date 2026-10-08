@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "main": "expo-router/entry",
   "dependencies": {
+    "@expo/vector-icons": "^15.0.2",
     "@music-room/shared": "^0.0.1",
     "expo": "~57.0.26",
     "expo-audio": "~57.0.5",

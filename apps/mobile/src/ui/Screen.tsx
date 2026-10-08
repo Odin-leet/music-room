@@ -25,7 +25,9 @@ export function Screen({ children, centered = false, form = false, style }: Prop
   const contentStyle = [styles.content, centered && styles.centered, style];
 
   return (
-    <SafeAreaView style={styles.safe}>
+    // No bottom edge: inside the app the tab bar handles it, and the
+    // sign-in screens have enough bottom padding of their own.
+    <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
       {form ? (
         <KeyboardAvoidingView
           style={styles.flex}

@@ -6,7 +6,7 @@ import { ApiError } from '@/api/client';
 import { EDIT_DENY_MESSAGE, playlistSubtitle } from '@/playlists/labels';
 import { DragList } from '@/playlists/DragList';
 import { afterIdAt, guessPosition, sorted } from '@/playlists/order';
-import { PlaylistPlayer } from '@/playlists/PlaylistPlayer';
+import { toPlayerTrack, usePlayer } from '@/player/PlayerProvider';
 import { usePlaylistRealtime } from '@/playlists/usePlaylistRealtime';
 import { useSession } from '@/session/SessionProvider';
 import { colors, font, radius, spacing } from '@/theme';
@@ -22,7 +22,11 @@ export default function PlaylistScreen() {
   const { authedApi } = useSession();
   const [playlist, setPlaylist] = useState<PlaylistView | null>(null);
   const [tracks, setTracks] = useState<PlaylistTrackView[] | null>(null);
-  const [playingId, setPlayingId] = useState<string | null>(null);
+  // What plays comes from the app-wide player: it keeps playing (and the ▶
+  // stays on the right row) even after you leave this screen.
+  const player = usePlayer();
+  const playingHere = player.source?.kind === 'playlist' && player.source.id === id;
+  const playingId = playingHere ? (player.track?.id ?? null) : null;
   const [error, setError] = useState<string | null>(null);
 
   const loadDetails = useCallback(async () => {
@@ -64,7 +68,7 @@ export default function PlaylistScreen() {
     onRemoved: drop,
     onUpdated: () => void loadDetails().catch(() => undefined),
     onGone: (why) => {
-      setPlayingId(null);
+      if (playingHere) player.stop();
       Alert.alert(why === 'deleted' ? 'Playlist deleted' : 'No access', 'This playlist is no longer available.');
       router.dismissTo('/playlists');
     },
@@ -118,6 +122,8 @@ export default function PlaylistScreen() {
   }
 
   const canEdit = playlist.canEdit.allowed;
+  const play = (t: PlaylistTrackView) =>
+    player.playPlaylist({ kind: 'playlist', id: playlist.id, name: playlist.name }, toPlayerTrack(t));
 
   const moveTo = (from: number, to: number) => {
     const list = [...tracks];
@@ -132,7 +138,7 @@ export default function PlaylistScreen() {
       <View style={styles.row}>
         <Pressable
           style={styles.rowMain}
-          onPress={() => setPlayingId(item.id)}
+          onPress={() => play(item)}
           accessibilityRole="button"
           accessibilityLabel={`${index + 1}. ${item.title} by ${item.artist}. Tap to play`}
         >
@@ -193,7 +199,13 @@ export default function PlaylistScreen() {
         />
       </View>
 
-      <PlaylistPlayer tracks={tracks} playingId={playingId} onPlayingChange={setPlayingId} />
+      {tracks.length ? (
+        playingHere ? (
+          <Text variant="muted">▶ Playing on this phone · controls below, on every screen</Text>
+        ) : (
+          <Button title="▶ Play from the top" variant="secondary" onPress={() => play(tracks[0])} />
+        )
+      ) : null}
 
       {canEdit ? (
         <Button

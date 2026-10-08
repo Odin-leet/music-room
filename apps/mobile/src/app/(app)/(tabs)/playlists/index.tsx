@@ -1,30 +1,30 @@
-import type { EventView } from '@music-room/shared';
+import type { PlaylistView } from '@music-room/shared';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 import { ApiError } from '@/api/client';
-import { eventSubtitle } from '@/events/labels';
+import { playlistSubtitle } from '@/playlists/labels';
 import { useSession } from '@/session/SessionProvider';
 import { colors, spacing } from '@/theme';
 import { Button, Card, Screen, Text } from '@/ui';
 
-// Public events + the ones I belong to.
-export default function EventsScreen() {
+// Public playlists + the ones I belong to, most recently edited first.
+export default function PlaylistsScreen() {
   const { authedApi } = useSession();
-  const [events, setEvents] = useState<EventView[] | null>(null);
+  const [playlists, setPlaylists] = useState<PlaylistView[] | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
-      setEvents(await authedApi<EventView[]>('/events'));
+      setPlaylists(await authedApi<PlaylistView[]>('/playlists'));
       setError(null);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not load events');
+      setError(err instanceof ApiError ? err.message : 'Could not load playlists');
     }
   }, [authedApi]);
 
-  // Reload every time the screen comes back into view (after create / join / delete).
+  // Reload every time the screen comes back into view (after create / join / edit / delete).
   useFocusEffect(
     useCallback(() => {
       void load();
@@ -33,20 +33,20 @@ export default function EventsScreen() {
 
   return (
     <Screen>
-      <Text variant="title">Events</Text>
+      <Text variant="title">Playlists</Text>
       <View style={styles.actions}>
         <View style={styles.action}>
-          <Button title="Create" onPress={() => router.push('/events/new')} />
+          <Button title="Create" onPress={() => router.push('/playlists/new')} />
         </View>
         <View style={styles.action}>
-          <Button title="Join with code" variant="secondary" onPress={() => router.push('/events/join')} />
+          <Button title="Join with code" variant="secondary" onPress={() => router.push('/playlists/join')} />
         </View>
       </View>
       {error ? <Text variant="error">{error}</Text> : null}
 
       <FlatList
-        data={events ?? []}
-        keyExtractor={(e) => e.id}
+        data={playlists ?? []}
+        keyExtractor={(p) => p.id}
         contentContainerStyle={styles.list}
         refreshControl={
           <RefreshControl
@@ -60,24 +60,26 @@ export default function EventsScreen() {
           />
         }
         ListEmptyComponent={
-          events ? <Text variant="muted">No events yet. Create one, or join with a code.</Text> : null
+          playlists ? <Text variant="muted">No playlists yet. Create one, or join with a code.</Text> : null
         }
         renderItem={({ item }) => (
           <Pressable
-            onPress={() => router.push({ pathname: '/events/[id]', params: { id: item.id } })}
+            onPress={() => router.push({ pathname: '/playlists/[id]', params: { id: item.id } })}
             accessibilityRole="button"
-            accessibilityLabel={`Open event ${item.name}`}
+            accessibilityLabel={`Open playlist ${item.name}`}
           >
             <Card>
-              <Text numberOfLines={1}>{item.name}</Text>
+              <Text numberOfLines={1}>
+                {item.visibility === 'private' ? '🔒 ' : ''}
+                {item.name}
+              </Text>
               <Text variant="muted" numberOfLines={1}>
-                {eventSubtitle(item)} · by {item.owner.displayName}
+                {playlistSubtitle(item)} · by {item.owner.displayName}
               </Text>
             </Card>
           </Pressable>
         )}
       />
-      <Button title="Back" variant="secondary" onPress={() => router.back()} />
     </Screen>
   );
 }

@@ -54,7 +54,6 @@ export default function PeopleScreen() {
         ListEmptyComponent={results ? <Text variant="muted">Nobody found with that name.</Text> : null}
         renderItem={({ item }) => <PersonRow person={item} />}
       />
-      <Button title="Back" variant="secondary" onPress={() => router.back()} />
     </Screen>
   );
 }

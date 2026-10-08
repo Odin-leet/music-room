@@ -6,6 +6,7 @@ import { ApiError } from '@/api/client';
 import { DENY_MESSAGE, eventSubtitle } from '@/events/labels';
 import { getCurrentCoords, LocationError, type Coords } from '@/events/location';
 import { OwnerPlayer } from '@/events/OwnerPlayer';
+import { usePlayer } from '@/player/PlayerProvider';
 import { useEventRealtime } from '@/events/useEventRealtime';
 import { useSession } from '@/session/SessionProvider';
 import { colors, font, radius, spacing } from '@/theme';
@@ -33,10 +34,15 @@ export default function EventQueueScreen() {
   const eventRef = useRef<EventView | null>(null);
 
   // Takes either the REST queue or a broadcast; votedByMe always comes from myVotes.
-  const applyQueue = useCallback((q: { nowPlaying: BroadcastTrack | null; upcoming: BroadcastTrack[] }) => {
-    setNowPlaying(q.nowPlaying);
-    setUpcoming(q.upcoming.map((t) => ({ ...t, votedByMe: myVotes.current.has(t.id) })));
-  }, []);
+  const { onEventQueue } = usePlayer();
+  const applyQueue = useCallback(
+    (q: { nowPlaying: BroadcastTrack | null; upcoming: BroadcastTrack[] }) => {
+      setNowPlaying(q.nowPlaying);
+      setUpcoming(q.upcoming.map((t) => ({ ...t, votedByMe: myVotes.current.has(t.id) })));
+      onEventQueue(id, q); // if this phone plays the party, follow its "now playing"
+    },
+    [id, onEventQueue],
+  );
 
   const load = useCallback(async () => {
     try {
@@ -171,7 +177,7 @@ export default function EventQueueScreen() {
           {error ? <Text variant="error">{error}</Text> : null}
 
           {event.myRole === 'owner' ? (
-            <OwnerPlayer eventId={event.id} nowPlaying={nowPlaying} queueLength={upcoming.length} onQueue={applyQueue} />
+            <OwnerPlayer event={event} nowPlaying={nowPlaying} queueLength={upcoming.length} />
           ) : nowPlaying ? (
             <View style={styles.nowPlaying}>
               <Text variant="muted">Now playing</Text>
@@ -189,7 +195,7 @@ export default function EventQueueScreen() {
       renderItem={({ item, index }) => (
         <TrackRow track={item} position={index + 1} canVote={canVote} onVote={() => void toggleVote(item)} />
       )}
-      ListFooterComponent={<Button title="Back" variant="secondary" onPress={() => router.back()} />}
+      ListFooterComponent={<Button title="Back to events" variant="secondary" onPress={() => router.back()} />}
     />
   );
 }

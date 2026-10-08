@@ -1,0 +1,111 @@
+# Continuous integration (brief V.8): on every push and pull request.
+#   checks       lint, type-check, unit tests, production build (no database)
+#   integration  a real Postgres + Mailpit, the API started from its build,
+#                then the concurrency / realtime / security scripts against it
+name: CI
+
+on:
+  push:
+  pull_request:
+
+# A newer push to the same branch cancels the run still in progress.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc # 22 -> the latest 22.x (>= 22.18 needed)
+          cache: npm
+      - run: npm ci
+      - name: Lint (API + app)
+        run: npm run lint --workspaces --if-present
+      - name: Type-check the API
+        run: npx tsc --noEmit -p apps/api/tsconfig.json
+      - name: Type-check the app
+        working-directory: apps/mobile
+        run: npx tsc --noEmit
+      - name: Unit tests
+        run: npm test --workspace=apps/api
+      - name: Production build of the API
+        run: npm run build --workspace=apps/api
+
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    needs: checks
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: music_room
+          POSTGRES_PASSWORD: music_room
+          POSTGRES_DB: music_room_dev
+        ports: ['5433:5432']
+        options: >-
+          --health-cmd "pg_isready -U music_room" --health-interval 2s --health-timeout 5s --health-retries 20
+      mailpit:
+        image: axllent/mailpit
+        ports: ['1025:1025']
+    env:
+      # The scripts reach Postgres directly (no docker compose on the runner).
+      DATABASE_URL: postgres://music_room:music_room@localhost:5433/music_room_dev
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+
+      - name: Write .env (CI values, a fresh JWT secret)
+        run: |
+          cp .env.example .env
+          secret=$(openssl rand -base64 64 | tr -d '\n/+=')
+          sed -i "s|^JWT_ACCESS_SECRET=.*|JWT_ACCESS_SECRET=${secret}|" .env
+          # Google / Facebook flows aren't run here, but the API needs values to start.
+          sed -i "s|^GOOGLE_CLIENT_ID=.*|GOOGLE_CLIENT_ID=ci-placeholder|; s|^GOOGLE_CLIENT_SECRET=.*|GOOGLE_CLIENT_SECRET=ci-placeholder|" .env
+          sed -i "s|^FACEBOOK_APP_ID=.*|FACEBOOK_APP_ID=ci-placeholder|; s|^FACEBOOK_APP_SECRET=.*|FACEBOOK_APP_SECRET=ci-placeholder|" .env
+          # Every script runs from this one runner (one IP): only the per-IP
+          # spraying limit is raised; per-account and per-user limits stay.
+          echo "AUTH_ATTEMPTS_PER_IP_PER_MINUTE=1000" >> .env
+
+      - name: Migrate the database
+        run: npm run migration:run --workspace=apps/api
+
+      - name: Build and start the API
+        run: |
+          npm run build --workspace=apps/api
+          cd apps/api && nohup node dist/main.js > ../../api.log 2>&1 &
+          for i in $(seq 1 60); do curl -sf http://localhost:3000/health && exit 0; sleep 1; done
+          echo "API did not start"; exit 1
+
+      # Rate limits first, while this runner's budgets are fresh.
+      - name: Rate limits + login lockout
+        run: npm run test:rate-limit --workspace=apps/api
+      - name: Account linking
+        run: npm run test:links --workspace=apps/api
+      - name: Someone else's token (IDOR audit)
+        run: npm run test:idor --workspace=apps/api
+      - name: Friends under concurrency
+        run: npm run test:friends-race --workspace=apps/api
+      - name: /me realtime
+        run: npm run test:me-realtime --workspace=apps/api
+      - name: Track Vote, votes under concurrency
+        run: npm run test:race --workspace=apps/api
+      - name: Track Vote realtime
+        run: npm run test:realtime --workspace=apps/api
+      - name: Playlist Editor, edits under concurrency
+        run: npm run test:playlist-race --workspace=apps/api
+      - name: Playlist Editor realtime
+        run: npm run test:playlist-realtime --workspace=apps/api
+
+      - name: API log (on failure)
+        if: failure()
+        run: tail -n 200 api.log

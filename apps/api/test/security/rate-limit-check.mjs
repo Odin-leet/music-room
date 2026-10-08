@@ -22,11 +22,16 @@ async function call(method, path, { token, body } = {}) {
   const text = await res.text();
   return { status: res.status, data: text ? JSON.parse(text) : null, retryAfter: res.headers.get('retry-after') };
 }
+// SQL: straight to psql when DATABASE_URL is set (CI), else through the
+// docker compose Postgres (local dev).
 const sql = (query) =>
-  execFileSync('docker', ['compose', 'exec', '-T', 'postgres', 'sh', '-c', 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -qAt'], {
-    cwd: root,
-    input: query,
-  })
+  (process.env.DATABASE_URL
+    ? execFileSync('psql', [process.env.DATABASE_URL, '-qAt'], { input: query })
+    : execFileSync('docker', ['compose', 'exec', '-T', 'postgres', 'sh', '-c', 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -qAt'], {
+        cwd: root,
+        input: query,
+      })
+  )
     .toString()
     .trim();
 const tag = randomBytes(3).toString('hex');

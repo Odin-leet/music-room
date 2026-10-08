@@ -1,6 +1,7 @@
 import { MUSIC_GENRES, type MusicGenre, type ProfileVisibility, type SignInMethods, type UserProfile } from '@music-room/shared';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import { ApiError } from '@/api/client';
 import { noErrors, toFormErrors } from '@/api/formErrors';
@@ -9,7 +10,7 @@ import { useLinkProvider } from '@/profile/useLinkProvider';
 import { useCurrentUser } from '@/session/CurrentUserProvider';
 import { SocialLoginError, useSession, type SocialProvider } from '@/session/SessionProvider';
 import { colors, spacing } from '@/theme';
-import { Button, Card, ChoiceChips, MultiChips, Screen, Text, TextField } from '@/ui';
+import { Avatar, Button, Card, CardTitle, ChoiceChips, ListItem, MultiChips, Screen, Text, TextField } from '@/ui';
 
 const MAX_ARTISTS = 10;
 
@@ -54,7 +55,7 @@ function changes(from: Draft, to: Draft) {
 // ways you can sign in.
 export default function MyProfileScreen() {
   const { authedApi } = useSession();
-  const { reload: reloadMe } = useCurrentUser();
+  const { me, reload: reloadMe } = useCurrentUser();
   const [saved, setSaved] = useState<Draft | null>(null); // what the server has
   const [draft, setDraft] = useState<Draft | null>(null); // what the form shows
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -126,11 +127,20 @@ export default function MyProfileScreen() {
 
   return (
     <Screen form>
-      <Text variant="title">My profile</Text>
+      <View style={styles.hero}>
+        <Avatar name={draft.displayName || '?'} size={64} />
+        <View style={styles.flex}>
+          <Text variant="title" numberOfLines={1}>
+            {draft.displayName}
+          </Text>
+          <Text variant="muted" numberOfLines={1}>
+            {me.state === 'ok' ? me.user.email : ''}
+          </Text>
+        </View>
+      </View>
 
       <Card>
-        <Text variant="muted">Public</Text>
-        <Text variant="muted">{TIER_HINT.public}</Text>
+        <CardTitle icon="globe-outline" title="Public" hint={TIER_HINT.public} />
         <TextField
           label="Display name"
           value={draft.displayName}
@@ -150,8 +160,7 @@ export default function MyProfileScreen() {
       </Card>
 
       <Card>
-        <Text variant="muted">Friends only</Text>
-        <Text variant="muted">{TIER_HINT.friends}</Text>
+        <CardTitle icon="people-outline" title="Friends only" hint={TIER_HINT.friends} />
         <TextField
           label="Real name"
           value={draft.realName}
@@ -169,8 +178,7 @@ export default function MyProfileScreen() {
       </Card>
 
       <Card>
-        <Text variant="muted">Private</Text>
-        <Text variant="muted">{TIER_HINT.private}</Text>
+        <CardTitle icon="lock-closed-outline" title="Private" hint={TIER_HINT.private} />
         <TextField
           label="Phone"
           placeholder="+33 6 12 34 56 78"
@@ -192,7 +200,7 @@ export default function MyProfileScreen() {
       </Card>
 
       <Card>
-        <Text variant="muted">Music preferences</Text>
+        <CardTitle icon="musical-notes-outline" title="Music preferences" />
         <ChoiceChips
           label="Who can see them"
           value={draft.musicVisibility}
@@ -246,12 +254,20 @@ export default function MyProfileScreen() {
 
       {errors.form ? <Text variant="error">{errors.form}</Text> : null}
       {notice ? <Text variant="success">{notice}</Text> : null}
-      <Button title="Save profile" loading={saving} disabled={!dirty} onPress={() => void save()} />
+      <Button title="Save profile" icon="checkmark" loading={saving} disabled={!dirty} onPress={() => void save()} />
 
       <SignInMethodsCard />
 
-      <Button title="Server settings" variant="secondary" onPress={() => router.push('/settings')} />
-      <LogOutButton />
+      <Card>
+        <ListItem
+          title="Server settings"
+          subtitle="Which Music Room server this app talks to"
+          leading={<Ionicons name="server-outline" size={22} color={colors.accent} />}
+          trailing={<Ionicons name="chevron-forward" size={18} color={colors.textMuted} />}
+          onPress={() => router.push('/settings')}
+        />
+        <LogOutButton />
+      </Card>
     </Screen>
   );
 }
@@ -260,11 +276,11 @@ function LogOutButton() {
   const { signOut } = useSession();
   const [busy, setBusy] = useState(false);
   return (
-    <Button
-      title="Log out"
-      variant="secondary"
-      loading={busy}
+    <ListItem
+      title={busy ? 'Logging out…' : 'Log out'}
+      leading={<Ionicons name="log-out-outline" size={22} color={colors.danger} />}
       onPress={() => {
+        if (busy) return;
         setBusy(true);
         void signOut();
       }}
@@ -331,25 +347,31 @@ function SignInMethodsCard() {
 
   return (
     <Card>
-      <Text variant="muted">Ways to sign in</Text>
+      <CardTitle icon="key-outline" title="Ways to sign in" />
       {methods ? (
         <>
-          <Text>
-            {methods.email} · {methods.password ? 'password set' : 'no password ("Forgot password" sets one)'}
-          </Text>
+          <ListItem
+            title="Email and password"
+            subtitle={methods.password ? `${methods.email} · password set` : `${methods.email} · no password yet ("Forgot password" sets one)`}
+            leading={<Ionicons name="mail-outline" size={22} color={colors.accent} />}
+          />
           {(['google', 'facebook'] as const).map((p) => (
-            <View key={p} style={styles.method}>
-              <Text style={styles.flex}>
-                {PROVIDER_NAME[p]}: {methods[p] ? 'linked' : 'not linked'}
-              </Text>
-              <Button
-                title={methods[p] ? 'Unlink' : 'Link'}
-                variant="secondary"
-                loading={busy === p}
-                disabled={busy !== null}
-                onPress={() => (methods[p] ? unlink(p) : void run(p, () => link(p)))}
-              />
-            </View>
+            <ListItem
+              key={p}
+              title={PROVIDER_NAME[p]}
+              subtitle={methods[p] ? 'Linked' : 'Not linked'}
+              leading={<Ionicons name={p === 'google' ? 'logo-google' : 'logo-facebook'} size={22} color={colors.accent} />}
+              trailing={
+                <Button
+                  title={methods[p] ? 'Unlink' : 'Link'}
+                  size="sm"
+                  variant={methods[p] ? 'secondary' : 'primary'}
+                  loading={busy === p}
+                  disabled={busy !== null && busy !== p}
+                  onPress={() => (methods[p] ? unlink(p) : void run(p, () => link(p)))}
+                />
+              }
+            />
           ))}
         </>
       ) : null}
@@ -369,5 +391,5 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   addRow: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.md },
-  method: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  hero: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
 });

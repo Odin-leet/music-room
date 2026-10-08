@@ -1,6 +1,7 @@
 export { Avatar } from './Avatar';
 export { Button, type IconName } from './Button';
 export { Card } from './Card';
+export { CardTitle } from './CardTitle';
 export { ChoiceChips } from './ChoiceChips';
 export { Cover } from './Cover';
 export { EmptyState } from './EmptyState';

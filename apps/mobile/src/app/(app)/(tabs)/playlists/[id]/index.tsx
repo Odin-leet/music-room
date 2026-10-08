@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
   index: { width: 22, textAlign: 'center' },
   cover: { width: 44, height: 44, borderRadius: radius.sm, backgroundColor: colors.border },
   rowText: { flex: 1 },
-  playing: { color: colors.primary, fontWeight: font.weight.medium },
+  playing: { color: colors.accent, fontWeight: font.weight.bold },
   tools: { flexDirection: 'row', gap: spacing.xs },
   icon: {
     width: 30,

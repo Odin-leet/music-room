@@ -24,7 +24,7 @@ export function AppTabBar({ state, navigation, meta }: TabBarProps & { meta: Rec
           const m = meta[route.name];
           if (!m) return null;
           const focused = state.index === index;
-          const color = focused ? colors.primary : colors.textMuted;
+          const color = focused ? colors.text : colors.textMuted;
           const onPress = () => {
             const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
             // Pressing the tab you're on goes back to its first screen (the stack handles tabPress).

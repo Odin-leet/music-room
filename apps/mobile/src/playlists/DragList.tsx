@@ -127,7 +127,7 @@ function Row(props: {
   });
 
   const highlight = useAnimatedStyle(() => ({
-    borderColor: active.value === index ? colors.primary : 'transparent',
+    borderColor: active.value === index ? colors.accent : 'transparent',
   }));
 
   return <Animated.View style={[styles.row, style, highlight]}>{props.children}</Animated.View>;

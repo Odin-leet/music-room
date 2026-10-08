@@ -36,9 +36,9 @@ export function Button({
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={primary ? colors.onPrimary : colors.primary} />
+        <ActivityIndicator color={primary ? colors.onPrimary : colors.text} />
       ) : (
-        <Text style={[styles.label, { color: primary ? colors.onPrimary : colors.primary }]}>
+        <Text style={[styles.label, { color: primary ? colors.onPrimary : colors.text }]}>
           {title}
         </Text>
       )}
@@ -55,11 +55,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   primary: { backgroundColor: colors.primary },
-  secondary: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: colors.primary,
-  },
+  // Tonal: an outline in the palette's mauve would barely show on the dark background.
+  secondary: { backgroundColor: colors.surfaceRaised },
   pressed: { opacity: 0.8 },
   inactive: { opacity: 0.5 },
   label: { fontSize: font.size.md, fontWeight: font.weight.medium },

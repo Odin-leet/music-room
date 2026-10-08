@@ -259,11 +259,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     borderRadius: radius.pill,
     borderWidth: 1,
-    borderColor: colors.primary,
+    borderColor: colors.accent,
     alignItems: 'center',
   },
   voteOn: { backgroundColor: colors.primary },
   voteDisabled: { opacity: 0.4 },
-  voteText: { color: colors.primary, fontWeight: font.weight.bold },
+  voteText: { color: colors.accent, fontWeight: font.weight.bold },
   voteTextOn: { color: colors.onPrimary },
 });

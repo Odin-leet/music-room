@@ -30,7 +30,7 @@ function AppNavigator() {
   if (me.state === 'loading') {
     return (
       <Screen centered>
-        <ActivityIndicator color={colors.primary} />
+        <ActivityIndicator color={colors.accent} />
       </Screen>
     );
   }

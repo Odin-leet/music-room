@@ -1,16 +1,18 @@
 import type { BroadcastTrack, EventView, QueueTrack, QueueView, VoteResult } from '@music-room/shared';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
-import { Alert, FlatList, Image, Pressable, StyleSheet, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { Alert, FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { ApiError } from '@/api/client';
 import { DENY_MESSAGE, eventSubtitle } from '@/events/labels';
 import { getCurrentCoords, LocationError, type Coords } from '@/events/location';
-import { OwnerPlayer } from '@/events/OwnerPlayer';
+import { NowPlayingCard } from '@/events/NowPlayingCard';
 import { usePlayer } from '@/player/PlayerProvider';
 import { useEventRealtime } from '@/events/useEventRealtime';
 import { useSession } from '@/session/SessionProvider';
 import { colors, font, radius, spacing } from '@/theme';
-import { Button, Text } from '@/ui';
+import { Button, Cover, EmptyState, IconButton, ListItem, ScreenHeader, SectionHeader, Text } from '@/ui';
 
 // The server's ranking rule, applied locally right after an optimistic vote
 // so the list reorders instantly; the next broadcast confirms it.
@@ -120,10 +122,10 @@ export default function EventQueueScreen() {
 
   if (!event) {
     return (
-      <View style={styles.center}>
+      <SafeAreaView style={styles.center}>
         <Text variant={error ? 'error' : 'muted'}>{error ?? 'Loading…'}</Text>
         <Button title="Back" variant="secondary" onPress={() => router.back()} />
-      </View>
+      </SafeAreaView>
     );
   }
 
@@ -131,139 +133,134 @@ export default function EventQueueScreen() {
   const needsLocation =
     !event.participation.allowed &&
     (event.participation.reason === 'location_required' || event.participation.reason === 'outside_area');
+  const addTrack = () =>
+    router.push({ pathname: '/events/[id]/add', params: { id: event.id, geo: event.license === 'geo' ? '1' : '' } });
 
   return (
-    <FlatList
-      style={styles.screen}
-      contentContainerStyle={styles.content}
-      data={upcoming}
-      keyExtractor={(t) => t.id}
-      ListHeaderComponent={
-        <View style={styles.header}>
-          <View style={styles.titleRow}>
-            <Text variant="title" style={styles.title} numberOfLines={2}>
-              {event.name}
-            </Text>
-            <Text variant={live === 'live' ? 'success' : 'muted'} accessibilityLabel={`Live updates: ${live}`}>
-              {live === 'live' ? '● Live' : live === 'connecting' ? '○ Connecting' : '○ Offline'}
-            </Text>
-          </View>
-          <Text variant="muted">{eventSubtitle(event)}</Text>
+    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
+      <FlatList
+        contentContainerStyle={styles.content}
+        data={upcoming}
+        keyExtractor={(t) => t.id}
+        ListHeaderComponent={
+          <View style={styles.header}>
+            <ScreenHeader
+              back
+              title={event.name}
+              subtitle={eventSubtitle(event)}
+              right={
+                <>
+                  <LiveDot status={live} />
+                  <IconButton
+                    icon="information-circle-outline"
+                    label="Event info and invite"
+                    onPress={() => router.push({ pathname: '/events/[id]/info', params: { id: event.id } })}
+                  />
+                </>
+              }
+            />
 
-          {canVote ? null : <Text variant="error">{DENY_MESSAGE[event.participation.reason]}</Text>}
-          {needsLocation ? (
-            <Button title="Share my location" variant="secondary" loading={locating} onPress={() => void shareLocation()} />
-          ) : null}
-
-          <View style={styles.actions}>
-            {canVote ? (
-              <View style={styles.action}>
-                <Button
-                  title="Add track"
-                  onPress={() =>
-                    router.push({ pathname: '/events/[id]/add', params: { id: event.id, geo: event.license === 'geo' ? '1' : '' } })
-                  }
-                />
+            {canVote ? null : (
+              <View style={styles.notice}>
+                <Ionicons name="lock-closed-outline" size={18} color={colors.textMuted} />
+                <Text variant="muted" style={styles.flex}>
+                  {DENY_MESSAGE[event.participation.reason]}
+                </Text>
               </View>
+            )}
+            {needsLocation ? (
+              <Button title="Share my location" icon="location-outline" variant="secondary" loading={locating} onPress={() => void shareLocation()} />
             ) : null}
-            <View style={styles.action}>
-              <Button
-                title="Info & invite"
-                variant="secondary"
-                onPress={() => router.push({ pathname: '/events/[id]/info', params: { id: event.id } })}
-              />
-            </View>
-          </View>
-          {error ? <Text variant="error">{error}</Text> : null}
 
-          {event.myRole === 'owner' ? (
-            <OwnerPlayer event={event} nowPlaying={nowPlaying} queueLength={upcoming.length} />
-          ) : nowPlaying ? (
-            <View style={styles.nowPlaying}>
-              <Text variant="muted">Now playing</Text>
-              <Text numberOfLines={1}>
-                {nowPlaying.title} — {nowPlaying.artist}
-              </Text>
-            </View>
-          ) : null}
-          <Text style={styles.sectionLabel}>Up next</Text>
-        </View>
-      }
-      ListEmptyComponent={
-        <Text variant="muted">{canVote ? 'The queue is empty. Add the first track!' : 'The queue is empty.'}</Text>
-      }
-      renderItem={({ item, index }) => (
-        <TrackRow track={item} position={index + 1} canVote={canVote} onVote={() => void toggleVote(item)} />
-      )}
-      ListFooterComponent={<Button title="Back to events" variant="secondary" onPress={() => router.back()} />}
-    />
+            <NowPlayingCard event={event} nowPlaying={nowPlaying} queueLength={upcoming.length} isOwner={event.myRole === 'owner'} />
+
+            {error ? <Text variant="error">{error}</Text> : null}
+            <SectionHeader title={`Up next${upcoming.length ? ` · ${upcoming.length}` : ''}`} action={canVote ? '+ Add' : undefined} onAction={addTrack} />
+          </View>
+        }
+        ListEmptyComponent={
+          <EmptyState
+            icon="musical-notes-outline"
+            title="The queue is empty"
+            text={canVote ? 'Suggest the first track, then vote for what plays next.' : 'Tracks will show up here.'}
+            action={canVote ? 'Add a track' : undefined}
+            onAction={addTrack}
+          />
+        }
+        renderItem={({ item, index }) => (
+          <ListItem
+            title={item.title}
+            subtitle={`${item.artist}${item.suggestedBy ? ` · ${item.suggestedBy.displayName}` : ''}`}
+            leading={
+              <View style={styles.leading}>
+                <Text variant="caption" style={styles.position}>
+                  {index + 1}
+                </Text>
+                <Cover uri={item.coverUrl} size={48} />
+              </View>
+            }
+            trailing={<VoteButton track={item} canVote={canVote} onPress={() => void toggleVote(item)} />}
+          />
+        )}
+      />
+    </SafeAreaView>
   );
 }
 
-function TrackRow({
-  track,
-  position,
-  canVote,
-  onVote,
-}: {
-  track: QueueTrack;
-  position: number;
-  canVote: boolean;
-  onVote: () => void;
-}) {
+function LiveDot({ status }: { status: 'connecting' | 'live' | 'offline' }) {
+  const live = status === 'live';
   return (
-    <View style={styles.row}>
-      <Text variant="muted" style={styles.position}>
-        {position}
-      </Text>
-      {track.coverUrl ? <Image source={{ uri: track.coverUrl }} style={styles.cover} /> : <View style={styles.cover} />}
-      <View style={styles.rowText}>
-        <Text numberOfLines={1}>{track.title}</Text>
-        <Text variant="muted" numberOfLines={1}>
-          {track.artist}
-          {track.suggestedBy ? ` · added by ${track.suggestedBy.displayName}` : ''}
-        </Text>
-      </View>
-      <Pressable
-        onPress={onVote}
-        disabled={!canVote}
-        accessibilityRole="button"
-        accessibilityState={{ selected: track.votedByMe, disabled: !canVote }}
-        accessibilityLabel={`${track.votedByMe ? 'Remove vote for' : 'Vote for'} ${track.title}, ${track.score} votes`}
-        style={[styles.vote, track.votedByMe && styles.voteOn, !canVote && styles.voteDisabled]}
-      >
-        <Text style={[styles.voteText, track.votedByMe && styles.voteTextOn]}>▲ {track.score}</Text>
-      </Pressable>
+    <View style={styles.live} accessibilityLabel={`Live updates: ${status}`}>
+      <View style={[styles.dot, { backgroundColor: live ? colors.success : colors.textMuted }]} />
+      <Text variant="caption">{live ? 'Live' : status === 'connecting' ? '…' : 'Offline'}</Text>
     </View>
+  );
+}
+
+// A pill with the vote count; filled when you've voted. Tap again to remove.
+function VoteButton({ track, canVote, onPress }: { track: QueueTrack; canVote: boolean; onPress: () => void }) {
+  const on = track.votedByMe;
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={!canVote}
+      hitSlop={6}
+      accessibilityRole="button"
+      accessibilityState={{ selected: on, disabled: !canVote }}
+      accessibilityLabel={`${on ? 'Remove vote for' : 'Vote for'} ${track.title}, ${track.score} votes`}
+      style={({ pressed }) => [styles.vote, on && styles.voteOn, !canVote && styles.voteDisabled, pressed && styles.pressed]}
+    >
+      <Ionicons name={on ? 'arrow-up-circle' : 'arrow-up-circle-outline'} size={20} color={on ? colors.onPrimary : colors.accent} />
+      <Text style={[styles.voteText, on && styles.voteTextOn]}>{track.score}</Text>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.xl, paddingTop: spacing.xxl * 1.5, gap: spacing.md },
+  content: { padding: spacing.lg, paddingBottom: spacing.xl, gap: spacing.xs },
   center: { flex: 1, justifyContent: 'center', padding: spacing.xl, gap: spacing.lg, backgroundColor: colors.background },
-  header: { gap: spacing.md, marginBottom: spacing.sm },
-  titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  title: { flex: 1 },
-  actions: { flexDirection: 'row', gap: spacing.md },
-  action: { flex: 1 },
-  nowPlaying: { padding: spacing.md, borderRadius: radius.md, backgroundColor: colors.surface, gap: spacing.xs },
-  sectionLabel: { fontSize: font.size.sm, fontWeight: font.weight.bold, marginTop: spacing.sm },
-  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  position: { width: 20, textAlign: 'right' },
-  cover: { width: 48, height: 48, borderRadius: radius.sm, backgroundColor: colors.surface },
-  rowText: { flex: 1 },
+  header: { gap: spacing.lg, marginBottom: spacing.xs },
+  flex: { flex: 1 },
+  notice: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md, borderRadius: radius.md, backgroundColor: colors.surface },
+  live: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: spacing.xs },
+  dot: { width: 8, height: 8, borderRadius: 4 },
+  leading: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  position: { width: 18, textAlign: 'right' },
   vote: {
-    minWidth: 64,
-    paddingVertical: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    minWidth: 60,
+    justifyContent: 'center',
+    paddingVertical: 6,
     paddingHorizontal: spacing.md,
     borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.accent,
-    alignItems: 'center',
+    backgroundColor: colors.surfaceRaised,
   },
   voteOn: { backgroundColor: colors.primary },
   voteDisabled: { opacity: 0.4 },
-  voteText: { color: colors.accent, fontWeight: font.weight.bold },
+  pressed: { opacity: 0.7 },
+  voteText: { color: colors.text, fontWeight: font.weight.bold },
   voteTextOn: { color: colors.onPrimary },
 });

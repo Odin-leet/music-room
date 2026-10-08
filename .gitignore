@@ -42,3 +42,8 @@ yarn-error.log*
 # coverage
 coverage/
  
+
+# load tests (V.7)
+apps/api/dist-load/
+loadtests/.data/
+loadtests/results/*.log

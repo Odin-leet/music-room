@@ -1,0 +1,5 @@
+{
+  "private": true,
+  "type": "module",
+  "description": "k6 load tests (brief V.7) — see README.md"
+}

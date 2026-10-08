@@ -17,7 +17,7 @@ Every phone sees every change instantly. Profiles, friends and Google / Facebook
 | **V.4 API docs**: Swagger UI with full schemas, [`docs/openapi.json`](docs/openapi.json), [`docs/realtime.md`](docs/realtime.md) | ✅ Done |
 | **V.5 Mobile**: React Native (Expo); the **server address is a setting in the app** | ✅ Done |
 | **V.6 Security**: action log (platform / device / app version), rate limits + lockout, ownership audit, see [`docs/security.md`](docs/security.md) | ✅ Done |
-| V.7 Ramp-up (load testing) | ⏳ To do |
+| **V.7 Ramp-up**: k6 baseline / capacity ramp / spike on a stated machine. **About 200 concurrent users** within the limits; slow but never failing up to 800. See [`loadtests/README.md`](loadtests/README.md) | ✅ Done |
 | V.8 CI (lint + tests on every push) | ⏳ To do |
 
 ## Architecture
@@ -39,6 +39,7 @@ music-room/
 ├── docker-compose.yml        # Postgres + Mailpit (dev email), on 127.0.0.1 — API and Expo run natively
 ├── .env.example              # API / database / mail / OAuth settings
 ├── .nvmrc                    # Node 22
+├── loadtests/                # k6 load tests + results (V.7) — make load-test
 ├── docs/
 │   ├── openapi.json          # the REST API, generated (Swagger)
 │   ├── realtime.md           # Socket.IO reference: /events, /playlists, /me
@@ -252,6 +253,7 @@ The full write-up is [`docs/security.md`](docs/security.md): every threat from t
 
 ```bash
 make test                                            # 51 unit tests (access rules, positions, PKCE…)
+make load-test                                       # k6 capacity ramp on a separate API + DB (loadtests/README.md)
 
 # against the running API:
 npm run test:race --workspace=apps/api               # 10 simultaneous votes -> score exactly 10
@@ -331,8 +333,8 @@ packages/shared/src/index.ts # API/app contract: types for every route and realt
 
 ## Roadmap
 
-1. **V.7:** load testing with k6 (baseline + spike) on a stated server spec, giving "how many users at once".
-2. **V.8:** GitHub Actions running lint + tests on every push.
+1. **V.8:** GitHub Actions running lint + tests on every push.
+2. Capacity (from the load tests): send Track Vote changes instead of the whole queue; several API processes + the Socket.IO Redis adapter.
 3. Housekeeping: a periodic cleanup of expired tokens and codes.
 
 ## Full specification

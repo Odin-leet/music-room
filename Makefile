@@ -4,7 +4,7 @@ ENV_FILE := .env
 .PHONY: help env install scaffold-api scaffold-mobile \
         db-up db-down db-logs db-shell \
         migrate migration-generate migration-revert \
-        dev dev-api dev-mobile build test lint clean
+        dev dev-api dev-mobile build test lint load-test clean
 
 help:
 	@echo "Music Room — make targets"
@@ -22,6 +22,7 @@ help:
 	@echo "    make dev             Run API + Expo together"
 	@echo "    make build           Build every workspace"
 	@echo "    make test            Run every workspace's tests"
+	@echo "    make load-test       k6 capacity ramp on a separate API + DB (see loadtests/README.md)"
 	@echo "    make lint            Lint every workspace"
 	@echo "    make db-logs         Tail Postgres logs"
 	@echo "    make db-shell        Open a psql shell in the running container"
@@ -95,6 +96,11 @@ test:
 
 lint:
 	npm run lint --workspaces --if-present
+
+# k6 load test (brief V.7). Needs Docker running and k6 (brew install k6).
+# Uses its own database and an API on port 3100: dev data is not touched.
+load-test:
+	node loadtests/run.mjs ramp
 
 clean:
 	rm -rf node_modules apps/*/node_modules apps/*/dist apps/*/.expo packages/*/node_modules

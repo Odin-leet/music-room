@@ -9,7 +9,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import { colors, spacing } from '@/theme';
-import { Text } from '@/ui';
+import { Ionicons } from '@expo/vector-icons';
 
 // Every row has the same height, so "where would it land" is plain
 // arithmetic: no measuring.
@@ -94,7 +94,7 @@ export function DragList<T>({ items, keyOf, renderRow, enabled, onMove, empty }:
                   accessibilityLabel="Drag to reorder"
                   accessibilityHint="Use the up and down buttons instead with a screen reader"
                 >
-                  <Text style={styles.handleText}>≡</Text>
+                  <Ionicons name="reorder-three" size={24} color={colors.textMuted} />
                 </View>
               </GestureDetector>
             ) : null}
@@ -144,6 +144,5 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   handle: { width: 32, height: ROW_HEIGHT, alignItems: 'center', justifyContent: 'center' },
-  handleText: { fontSize: 20, color: colors.textMuted },
   rowBody: { flex: 1, height: ROW_HEIGHT, justifyContent: 'center' },
 });

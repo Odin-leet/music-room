@@ -6,6 +6,7 @@ export { Cover } from './Cover';
 export { EmptyState } from './EmptyState';
 export { IconButton } from './IconButton';
 export { ListItem } from './ListItem';
+export { LiveDot } from './LiveDot';
 export { MultiChips } from './MultiChips';
 export { OrDivider } from './OrDivider';
 export { Screen } from './Screen';

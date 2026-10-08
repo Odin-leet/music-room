@@ -12,7 +12,7 @@ import { usePlayer } from '@/player/PlayerProvider';
 import { useEventRealtime } from '@/events/useEventRealtime';
 import { useSession } from '@/session/SessionProvider';
 import { colors, font, radius, spacing } from '@/theme';
-import { Button, Cover, EmptyState, IconButton, ListItem, ScreenHeader, SectionHeader, Text } from '@/ui';
+import { Button, Cover, EmptyState, IconButton, ListItem, LiveDot, ScreenHeader, SectionHeader, Text } from '@/ui';
 
 // The server's ranking rule, applied locally right after an optimistic vote
 // so the list reorders instantly; the next broadcast confirms it.
@@ -207,16 +207,6 @@ export default function EventQueueScreen() {
   );
 }
 
-function LiveDot({ status }: { status: 'connecting' | 'live' | 'offline' }) {
-  const live = status === 'live';
-  return (
-    <View style={styles.live} accessibilityLabel={`Live updates: ${status}`}>
-      <View style={[styles.dot, { backgroundColor: live ? colors.success : colors.textMuted }]} />
-      <Text variant="caption">{live ? 'Live' : status === 'connecting' ? '…' : 'Offline'}</Text>
-    </View>
-  );
-}
-
 // A pill with the vote count; filled when you've voted. Tap again to remove.
 function VoteButton({ track, canVote, onPress }: { track: QueueTrack; canVote: boolean; onPress: () => void }) {
   const on = track.votedByMe;
@@ -243,8 +233,6 @@ const styles = StyleSheet.create({
   header: { gap: spacing.lg, marginBottom: spacing.xs },
   flex: { flex: 1 },
   notice: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md, borderRadius: radius.md, backgroundColor: colors.surface },
-  live: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: spacing.xs },
-  dot: { width: 8, height: 8, borderRadius: 4 },
   leading: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   position: { width: 18, textAlign: 'right' },
   vote: {

@@ -1,7 +1,8 @@
 import type { PlaylistTracksView, PlaylistTrackView, PlaylistView } from '@music-room/shared';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Alert, Image, Pressable, StyleSheet, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import { ApiError } from '@/api/client';
 import { EDIT_DENY_MESSAGE, playlistSubtitle } from '@/playlists/labels';
 import { DragList } from '@/playlists/DragList';
@@ -10,9 +11,7 @@ import { toPlayerTrack, usePlayer } from '@/player/PlayerProvider';
 import { usePlaylistRealtime } from '@/playlists/usePlaylistRealtime';
 import { useSession } from '@/session/SessionProvider';
 import { colors, font, radius, spacing } from '@/theme';
-import { Button, Screen, Text } from '@/ui';
-
-const STATUS_LABEL = { connecting: 'connecting…', live: '● live', offline: 'offline' } as const;
+import { Button, Cover, EmptyState, IconButton, LiveDot, Screen, ScreenHeader, Text } from '@/ui';
 
 // A playlist's tracks: listen, and (if you can edit) add, remove and reorder.
 // Every edit is shown at once, sent to the API, and confirmed by the
@@ -140,17 +139,21 @@ export default function PlaylistScreen() {
           style={styles.rowMain}
           onPress={() => play(item)}
           accessibilityRole="button"
-          accessibilityLabel={`${index + 1}. ${item.title} by ${item.artist}. Tap to play`}
+          accessibilityLabel={`${index + 1}. ${item.title} by ${item.artist}. ${playing ? 'Playing' : 'Tap to play'}`}
         >
-          <Text variant="muted" style={styles.index}>
-            {playing ? '▶' : index + 1}
-          </Text>
-          {item.coverUrl ? <Image source={{ uri: item.coverUrl }} style={styles.cover} /> : <View style={styles.cover} />}
+          <View style={styles.index}>
+            {playing ? (
+              <Ionicons name="stats-chart" size={14} color={colors.accent} />
+            ) : (
+              <Text variant="caption">{index + 1}</Text>
+            )}
+          </View>
+          <Cover uri={item.coverUrl} size={44} />
           <View style={styles.rowText}>
             <Text numberOfLines={1} style={playing && styles.playing}>
               {item.title}
             </Text>
-            <Text variant="muted" numberOfLines={1}>
+            <Text variant="caption" numberOfLines={1}>
               {item.artist}
               {item.addedBy ? ` · ${item.addedBy.displayName}` : ''}
             </Text>
@@ -158,16 +161,18 @@ export default function PlaylistScreen() {
         </Pressable>
         {canEdit ? (
           <View style={styles.tools}>
-            <IconButton label="▲" a11y={`Move ${item.title} up`} disabled={index === 0} onPress={() => moveBy(index, -1)} />
+            <IconButton icon="chevron-up" label={`Move ${item.title} up`} size={30} disabled={index === 0} onPress={() => moveBy(index, -1)} />
             <IconButton
-              label="▼"
-              a11y={`Move ${item.title} down`}
+              icon="chevron-down"
+              label={`Move ${item.title} down`}
+              size={30}
               disabled={index === tracks.length - 1}
               onPress={() => moveBy(index, 1)}
             />
             <IconButton
-              label="✕"
-              a11y={`Remove ${item.title}`}
+              icon="close"
+              label={`Remove ${item.title}`}
+              size={30}
               onPress={() =>
                 Alert.alert('Remove track?', `"${item.title}" will be removed for everyone.`, [
                   { text: 'Cancel', style: 'cancel' },
@@ -181,39 +186,54 @@ export default function PlaylistScreen() {
     );
   };
 
+  const addTracks = () => router.push({ pathname: '/playlists/[id]/add', params: { id: playlist.id } });
+
   return (
     <Screen>
-      <View style={styles.header}>
-        <View style={styles.headerText}>
-          <Text variant="title" numberOfLines={1}>
-            {playlist.name}
+      <ScreenHeader
+        back
+        title={playlist.name}
+        subtitle={`by ${playlist.owner.displayName}`}
+        right={
+          <>
+            <LiveDot status={realtime} />
+            <IconButton
+              icon="information-circle-outline"
+              label="Playlist info and invite"
+              onPress={() => router.push({ pathname: '/playlists/[id]/info', params: { id: playlist.id } })}
+            />
+          </>
+        }
+      />
+
+      <View style={styles.hero}>
+        <Cover uris={tracks.slice(0, 4).map((t) => t.coverUrl)} uri={tracks[0]?.coverUrl} size={112} icon="musical-notes" />
+        <View style={styles.heroText}>
+          <Text variant="muted" numberOfLines={2}>
+            {playlistSubtitle({ ...playlist, trackCount: tracks.length })}
           </Text>
-          <Text variant="muted" numberOfLines={1}>
-            {playlistSubtitle({ ...playlist, trackCount: tracks.length })} · {STATUS_LABEL[realtime]}
-          </Text>
+          <View style={styles.heroButtons}>
+            {tracks.length ? (
+              <IconButton
+                icon={playingHere && player.playing ? 'pause' : 'play'}
+                label={playingHere ? (player.playing ? 'Pause' : 'Resume') : 'Play from the top'}
+                variant="filled"
+                size={52}
+                onPress={() => (playingHere ? player.togglePause() : play(tracks[0]))}
+              />
+            ) : null}
+            {canEdit ? <Button title="Add" icon="add" size="sm" variant="secondary" onPress={addTracks} /> : null}
+          </View>
         </View>
-        <Button
-          title="Info"
-          variant="secondary"
-          onPress={() => router.push({ pathname: '/playlists/[id]/info', params: { id: playlist.id } })}
-        />
       </View>
 
-      {tracks.length ? (
-        playingHere ? (
-          <Text variant="muted">▶ Playing on this phone · controls below, on every screen</Text>
-        ) : (
-          <Button title="▶ Play from the top" variant="secondary" onPress={() => play(tracks[0])} />
-        )
-      ) : null}
-
-      {canEdit ? (
-        <Button
-          title="+ Add tracks"
-          onPress={() => router.push({ pathname: '/playlists/[id]/add', params: { id: playlist.id } })}
-        />
-      ) : (
-        <Text variant="muted">{EDIT_DENY_MESSAGE[playlist.canEdit.reason]}</Text>
+      {canEdit ? null : (
+        <View style={styles.notice}>
+          <Ionicons name="lock-closed-outline" size={18} color={colors.textMuted} />
+          <Text variant="muted" style={styles.flex}>
+            {EDIT_DENY_MESSAGE[playlist.canEdit.reason]}
+          </Text>
+        </View>
       )}
       {error ? <Text variant="error">{error}</Text> : null}
 
@@ -224,51 +244,37 @@ export default function PlaylistScreen() {
           renderRow={renderRow}
           enabled={canEdit}
           onMove={moveTo}
-          empty={<Text variant="muted">{canEdit ? 'No tracks yet. Add the first one!' : 'No tracks yet.'}</Text>}
+          empty={
+            <EmptyState
+              icon="musical-notes-outline"
+              title="No tracks yet"
+              text={canEdit ? 'Add the first one — everyone here will see it live.' : 'Tracks will show up here.'}
+              action={canEdit ? 'Add tracks' : undefined}
+              onAction={addTracks}
+            />
+          }
         />
       </View>
       {canEdit && tracks.length > 1 ? (
-        <Text variant="muted">Tap a track to play it · drag ≡, or use ▲ ▼, to reorder</Text>
+        <Text variant="caption" style={styles.hint}>
+          Tap a track to play it · drag the handle, or use the arrows, to reorder
+        </Text>
       ) : null}
-      <Button title="Back" variant="secondary" onPress={() => router.back()} />
     </Screen>
   );
 }
 
-function IconButton(props: { label: string; a11y: string; onPress: () => void; disabled?: boolean }) {
-  return (
-    <Pressable
-      onPress={props.onPress}
-      disabled={props.disabled}
-      hitSlop={6}
-      accessibilityRole="button"
-      accessibilityLabel={props.a11y}
-      style={[styles.icon, props.disabled && styles.iconDisabled]}
-    >
-      <Text style={styles.iconText}>{props.label}</Text>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  headerText: { flex: 1 },
   flex: { flex: 1 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingRight: spacing.sm },
-  rowMain: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingLeft: spacing.xs },
-  index: { width: 22, textAlign: 'center' },
-  cover: { width: 44, height: 44, borderRadius: radius.sm, backgroundColor: colors.border },
+  hero: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
+  heroText: { flex: 1, gap: spacing.md },
+  heroButtons: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  notice: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md, borderRadius: radius.md, backgroundColor: colors.surface },
+  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingRight: spacing.xs },
+  rowMain: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  index: { width: 20, alignItems: 'center' },
   rowText: { flex: 1 },
   playing: { color: colors.accent, fontWeight: font.weight.bold },
-  tools: { flexDirection: 'row', gap: spacing.xs },
-  icon: {
-    width: 30,
-    height: 30,
-    borderRadius: radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.background,
-  },
-  iconDisabled: { opacity: 0.3 },
-  iconText: { fontSize: font.size.sm },
+  tools: { flexDirection: 'row' },
+  hint: { textAlign: 'center' },
 });

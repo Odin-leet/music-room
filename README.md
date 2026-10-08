@@ -1,5 +1,7 @@
 # Music Room
 
+[![CI](https://github.com/Odin-leet/music-room/actions/workflows/ci.yml/badge.svg)](https://github.com/Odin-leet/music-room/actions/workflows/ci.yml)
+
 Mobile, collaborative, real-time music app:
 - **Track Vote:** people gather around an event's live queue, suggest tracks and vote on what plays next.
 - **Playlist Editor:** people build a playlist together, adding, removing and reordering tracks at the same time.
@@ -18,7 +20,7 @@ Every phone sees every change instantly. Profiles, friends and Google / Facebook
 | **V.5 Mobile**: React Native (Expo); the **server address is a setting in the app** | ✅ Done |
 | **V.6 Security**: action log (platform / device / app version), rate limits + lockout, ownership audit, see [`docs/security.md`](docs/security.md) | ✅ Done |
 | **V.7 Ramp-up**: k6 baseline / capacity ramp / spike on a stated machine. **About 200 concurrent users** within the limits; slow but never failing up to 800. See [`loadtests/README.md`](loadtests/README.md) | ✅ Done |
-| V.8 CI (lint + tests on every push) | ⏳ To do |
+| **V.8 CI**: GitHub Actions on every push: lint, types, unit tests, build, then the concurrency / realtime / security scripts against a real Postgres | ✅ Done |
 
 ## Architecture
 
@@ -269,6 +271,12 @@ npm run test:rate-limit --workspace=apps/api         # limits + lockout (wait a 
 
 The concurrency tests were written **before** the code they test, as the brief's test plan asks: each first failed, then passed once the feature existed.
 
+**CI** ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs on every push and pull request:
+- **checks:** lint, type-checks, the unit tests, the API's production build;
+- **integration:** Postgres + Mailpit as service containers, migrations, the API started from its build, then **all nine scripts above** (except the k6 load test, which needs a quiet machine).
+
+Some scripts search Deezer to get real tracks, so the integration job needs Deezer to be reachable from GitHub's runners.
+
 ---
 
 ## Code layout
@@ -333,9 +341,8 @@ packages/shared/src/index.ts # API/app contract: types for every route and realt
 
 ## Roadmap
 
-1. **V.8:** GitHub Actions running lint + tests on every push.
-2. Capacity (from the load tests): send Track Vote changes instead of the whole queue; several API processes + the Socket.IO Redis adapter.
-3. Housekeeping: a periodic cleanup of expired tokens and codes.
+1. Capacity (from the load tests): send Track Vote changes instead of the whole queue; several API processes + the Socket.IO Redis adapter.
+2. Housekeeping: a periodic cleanup of expired tokens and codes.
 
 ## Full specification
 

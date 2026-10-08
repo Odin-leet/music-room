@@ -45,6 +45,8 @@ function RootNavigator() {
       </Stack.Protected>
       {/* Social-login return link: reachable in both states, closes itself. */}
       <Stack.Screen name="oauth" options={{ animation: 'none' }} />
+      {/* Which server to talk to: reachable signed in or not (brief V.5). */}
+      <Stack.Screen name="settings" />
     </Stack>
   );
 }

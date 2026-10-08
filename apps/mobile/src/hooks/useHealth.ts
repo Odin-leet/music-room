@@ -1,6 +1,6 @@
 import type { HealthResponse } from '@music-room/shared';
 import { useCallback, useEffect, useState } from 'react';
-import { API_URL } from '@/config';
+import { getApiUrl } from '@/config';
 
 export type Health =
   | { state: 'loading' }
@@ -9,7 +9,7 @@ export type Health =
 
 async function fetchHealth(): Promise<Health> {
   try {
-    const res = await fetch(`${API_URL}/health`);
+    const res = await fetch(`${getApiUrl()}/health`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return { state: 'ok', data: (await res.json()) as HealthResponse };
   } catch (err) {

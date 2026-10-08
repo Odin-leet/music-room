@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { API_URL } from '@/config';
+import { getApiUrl } from '@/config';
 import { useCurrentUser } from '@/session/CurrentUserProvider';
 import { useHealth } from '@/hooks/useHealth';
 import { useIncomingRequests } from '@/profile/MeRealtimeProvider';
@@ -33,7 +33,8 @@ export default function HomeScreen() {
       {me.state === 'error' && <Text variant="error">{me.message}</Text>}
 
       <Card>
-        <Text variant="muted">{API_URL}</Text>
+        <Text variant="muted">{getApiUrl()}</Text>
+        <Button title="Server settings" variant="secondary" onPress={() => router.push('/settings')} />
         {health.state === 'loading' && <Text>Checking API…</Text>}
         {health.state === 'ok' && <Text variant="success">API: {health.data.status}</Text>}
         {health.state === 'error' && (

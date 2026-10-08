@@ -1,4 +1,4 @@
-import { API_URL } from '@/config';
+import { getApiUrl } from '@/config';
 import { CLIENT_HEADERS } from './clientInfo';
 
 const TIMEOUT_MS = 10_000;
@@ -26,12 +26,14 @@ export type ApiOptions = {
 };
 
 export async function api<T>(path: string, { method = 'GET', body, token }: ApiOptions = {}): Promise<T> {
+  const base = getApiUrl();
+  if (!base) throw new ApiError(0, 'No server address yet: set it in Server settings');
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
   let res: Response;
   try {
-    res = await fetch(`${API_URL}${path}`, {
+    res = await fetch(`${base}${path}`, {
       method,
       signal: controller.signal,
       headers: {

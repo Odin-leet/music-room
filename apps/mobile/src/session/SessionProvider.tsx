@@ -12,7 +12,7 @@ import {
   type ReactNode,
 } from 'react';
 import { api, ApiError, type ApiOptions } from '@/api/client';
-import { API_URL } from '@/config';
+import { getApiUrl, loadApiUrl } from '@/config';
 import { createPkcePair } from './pkce';
 import { tokenStore } from './tokenStore';
 
@@ -107,8 +107,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [startSession, endSession]);
 
   // Restore on launch: a stored refresh token becomes a fresh access token.
+  // The server address saved in Server settings is loaded first: restoring
+  // already talks to the server.
   useEffect(() => {
-    refresh()
+    loadApiUrl()
+      .then(() => refresh())
       .then((accessToken) => {
         if (!accessToken) setStatus('signedOut');
       })
@@ -158,7 +161,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     // Expo Go: exp://…/--/oauth · our own builds: musicroom://oauth
     const returnUrl = Linking.createURL('oauth');
     const startUrl =
-      `${API_URL}/auth/${provider}/start` +
+      `${getApiUrl()}/auth/${provider}/start` +
       `?redirect=${encodeURIComponent(returnUrl)}&code_challenge=${challenge}`;
 
     const result = await WebBrowser.openAuthSessionAsync(startUrl, returnUrl);

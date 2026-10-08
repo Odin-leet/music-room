@@ -2,7 +2,7 @@ import type { FriendRequestsView, MeServerToClientEvents } from '@music-room/sha
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { io, type Socket } from 'socket.io-client';
 import { CLIENT_INFO } from '@/api/clientInfo';
-import { API_URL } from '@/config';
+import { getApiUrl } from '@/config';
 import { useSession } from '@/session/SessionProvider';
 
 type Listener = (otherUserId: string) => void;
@@ -32,7 +32,7 @@ export function MeRealtimeProvider({ children }: { children: ReactNode }) {
   }, [authedApi]);
 
   useEffect(() => {
-    const socket: Socket<MeServerToClientEvents> = io(`${API_URL}/me`, {
+    const socket: Socket<MeServerToClientEvents> = io(`${getApiUrl()}/me`, {
       // A function: called on every (re)connect, so it always sends the latest token.
       auth: (cb) => cb({ token: getAccessToken(), client: CLIENT_INFO }),
       transports: ['websocket'],

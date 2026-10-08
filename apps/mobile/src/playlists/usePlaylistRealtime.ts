@@ -6,7 +6,7 @@ import type {
 import { useEffect, useRef, useState } from 'react';
 import { io, type Socket } from 'socket.io-client';
 import { CLIENT_INFO } from '@/api/clientInfo';
-import { API_URL } from '@/config';
+import { getApiUrl } from '@/config';
 import type { RealtimeStatus } from '@/events/useEventRealtime';
 import { useSession } from '@/session/SessionProvider';
 
@@ -36,7 +36,7 @@ export function usePlaylistRealtime(playlistId: string, handlers: Handlers): Rea
   });
 
   useEffect(() => {
-    const socket: Socket<PlaylistServerToClientEvents, PlaylistClientToServerEvents> = io(`${API_URL}/playlists`, {
+    const socket: Socket<PlaylistServerToClientEvents, PlaylistClientToServerEvents> = io(`${getApiUrl()}/playlists`, {
       // A function: called on every (re)connect, so it always sends the latest token.
       auth: (cb) => cb({ token: getAccessToken(), client: CLIENT_INFO }),
       transports: ['websocket'],

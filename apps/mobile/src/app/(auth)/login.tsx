@@ -3,6 +3,7 @@ import { useRef, useState } from 'react';
 import type { TextInput } from 'react-native';
 import { noErrors, toFormErrors } from '@/api/formErrors';
 import { SocialSignInButton } from '@/components/SocialSignInButton';
+import { getApiUrl } from '@/config';
 import { useSession } from '@/session/SessionProvider';
 import { Button, OrDivider, Screen, Text, TextField } from '@/ui';
 
@@ -84,6 +85,10 @@ export default function LoginScreen() {
       </Link>
       <Link href="/register">
         <Text variant="muted">No account yet? Register</Text>
+      </Link>
+      {/* Point the app at another server before signing in (brief V.5). */}
+      <Link href="/settings">
+        <Text variant="muted">Server: {getApiUrl() || 'not set'} · change</Text>
       </Link>
     </Screen>
   );

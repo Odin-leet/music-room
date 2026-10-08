@@ -71,7 +71,7 @@ export default function HomeScreen() {
 
         {incoming ? (
           <Pressable
-            onPress={() => router.push('/people/friends')}
+            onPress={() => router.push('/people')}
             accessibilityRole="button"
             style={({ pressed }) => [styles.banner, pressed && styles.pressed]}
           >

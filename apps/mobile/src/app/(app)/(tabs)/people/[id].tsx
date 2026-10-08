@@ -1,13 +1,14 @@
 import type { FriendshipResult, UserProfile } from '@music-room/shared';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { ApiError } from '@/api/client';
 import { GENRE_LABEL } from '@/profile/labels';
 import { useFriendsChanged } from '@/profile/MeRealtimeProvider';
 import { useSession } from '@/session/SessionProvider';
-import { spacing } from '@/theme';
-import { Button, Card, Screen, Text } from '@/ui';
+import { colors, radius, spacing } from '@/theme';
+import { Avatar, Button, type IconName, Screen, ScreenHeader, Text } from '@/ui';
 
 // Someone's profile, as the API filtered it for you: only the tiers you may
 // see are filled in (the app never decides that itself).
@@ -78,82 +79,124 @@ export default function PersonScreen() {
   return (
     <Screen>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text variant="title">{name}</Text>
-        {profile.public.bio ? <Text>{profile.public.bio}</Text> : <Text variant="muted">No bio.</Text>}
+        <ScreenHeader back title="" />
+        <View style={styles.hero}>
+          <Avatar name={name} size={96} />
+          <Text variant="title" style={styles.center}>
+            {name}
+          </Text>
+          <Text variant="muted" style={styles.center}>
+            {profile.public.bio || 'No bio yet.'}
+          </Text>
 
-        {profile.relation === 'self' ? (
-          <Button title="This is you — edit my profile" onPress={() => router.replace('/profile')} />
-        ) : (
-          <Card>
-            {profile.friendship === 'none' ? (
-              <Button title="Add friend" loading={busy} onPress={() => void act(request)} />
-            ) : null}
-            {profile.friendship === 'request_sent' ? (
-              <>
-                <Text variant="muted">Friend request sent. Waiting for {name}.</Text>
-                <Button title="Cancel request" variant="secondary" loading={busy} onPress={() => void act(dropRequest)} />
-              </>
-            ) : null}
-            {profile.friendship === 'request_received' ? (
-              <>
-                <Text>{name} wants to be your friend.</Text>
-                <View style={styles.row}>
-                  <View style={styles.flex}>
-                    <Button title="Accept" loading={busy} onPress={() => void act(accept)} />
-                  </View>
-                  <View style={styles.flex}>
-                    <Button title="Decline" variant="secondary" disabled={busy} onPress={() => void act(dropRequest)} />
-                  </View>
-                </View>
-              </>
-            ) : null}
-            {profile.friendship === 'friends' ? (
-              <>
-                <Text variant="success">You are friends.</Text>
-                <Button title="Unfriend" variant="secondary" disabled={busy} onPress={unfriend} />
-              </>
-            ) : null}
-          </Card>
-        )}
+          {profile.relation === 'self' ? (
+            <Button title="Edit my profile" icon="create-outline" size="sm" variant="secondary" onPress={() => router.replace('/profile')} />
+          ) : profile.friendship === 'none' ? (
+            <Button title="Add friend" icon="person-add" size="sm" loading={busy} onPress={() => void act(request)} />
+          ) : profile.friendship === 'request_sent' ? (
+            <>
+              <Text variant="caption">Request sent. Waiting for {name}.</Text>
+              <Button title="Cancel request" icon="close" size="sm" variant="secondary" loading={busy} onPress={() => void act(dropRequest)} />
+            </>
+          ) : profile.friendship === 'request_received' ? (
+            <>
+              <Text variant="caption">{name} wants to be your friend.</Text>
+              <View style={styles.row}>
+                <Button title="Accept" icon="checkmark" size="sm" loading={busy} onPress={() => void act(accept)} />
+                <Button title="Decline" size="sm" variant="secondary" disabled={busy} onPress={() => void act(dropRequest)} />
+              </View>
+            </>
+          ) : profile.friendship === 'friends' ? (
+            <View style={styles.row}>
+              <View style={styles.friends}>
+                <Ionicons name="heart" size={16} color={colors.success} />
+                <Text variant="success">Friends</Text>
+              </View>
+              <Button title="Unfriend" size="sm" variant="secondary" disabled={busy} onPress={unfriend} />
+            </View>
+          ) : null}
+        </View>
         {error ? <Text variant="error">{error}</Text> : null}
 
-        <Card>
-          <Text variant="muted">Friends only</Text>
+        <Section icon="people-outline" title="Friends only">
           {profile.friendsOnly ? (
             <>
-              <Text>Real name: {profile.friendsOnly.realName ?? '—'}</Text>
-              <Text>City: {profile.friendsOnly.city ?? '—'}</Text>
+              <Detail label="Real name" value={profile.friendsOnly.realName} />
+              <Detail label="City" value={profile.friendsOnly.city} />
             </>
           ) : (
-            <Text variant="muted">Only {name}’s friends can see this.</Text>
+            <Hidden text={`Only ${name}’s friends can see this.`} />
           )}
-        </Card>
+        </Section>
 
-        <Card>
-          <Text variant="muted">Music taste</Text>
+        <Section icon="musical-notes-outline" title="Music taste">
           {profile.music ? (
             <>
-              <Text>
-                {profile.music.genres.length ? profile.music.genres.map((g) => GENRE_LABEL[g]).join(' · ') : 'No genres yet.'}
-              </Text>
-              {profile.music.artists.length ? (
-                <Text variant="muted">Loves {profile.music.artists.join(', ')}</Text>
-              ) : null}
+              {profile.music.genres.length ? (
+                <View style={styles.chips}>
+                  {profile.music.genres.map((g) => (
+                    <View key={g} style={styles.chip}>
+                      <Text variant="caption" style={styles.chipText}>
+                        {GENRE_LABEL[g]}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                <Text variant="muted">No genres yet.</Text>
+              )}
+              {profile.music.artists.length ? <Text variant="muted">Loves {profile.music.artists.join(', ')}</Text> : null}
             </>
           ) : (
-            <Text variant="muted">{name} doesn’t share their music taste with you.</Text>
+            <Hidden text={`${name} doesn’t share their music taste with you.`} />
           )}
-        </Card>
-
+        </Section>
         {/* The private tier is never sent for anyone but yourself. */}
-        <Button title="Back" variant="secondary" onPress={() => router.back()} />
       </ScrollView>
     </Screen>
   );
 }
 
+function Section({ icon, title, children }: { icon: IconName; title: string; children: React.ReactNode }) {
+  return (
+    <View style={styles.section}>
+      <View style={styles.sectionTitle}>
+        <Ionicons name={icon} size={18} color={colors.accent} />
+        <Text variant="heading">{title}</Text>
+      </View>
+      {children}
+    </View>
+  );
+}
+
+const Detail = ({ label, value }: { label: string; value: string | null }) => (
+  <View style={styles.detail}>
+    <Text variant="muted">{label}</Text>
+    <Text>{value ?? '—'}</Text>
+  </View>
+);
+
+const Hidden = ({ text }: { text: string }) => (
+  <View style={styles.hidden}>
+    <Ionicons name="lock-closed-outline" size={16} color={colors.textMuted} />
+    <Text variant="muted" style={styles.flex}>
+      {text}
+    </Text>
+  </View>
+);
+
 const styles = StyleSheet.create({
   content: { gap: spacing.lg, paddingBottom: spacing.xl },
-  row: { flexDirection: 'row', gap: spacing.md },
+  hero: { alignItems: 'center', gap: spacing.sm },
+  center: { textAlign: 'center' },
+  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  friends: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   flex: { flex: 1 },
+  section: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg, gap: spacing.md },
+  sectionTitle: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  detail: { flexDirection: 'row', justifyContent: 'space-between' },
+  hidden: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  chip: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radius.pill, backgroundColor: colors.primary },
+  chipText: { color: colors.onPrimary },
 });

@@ -1,24 +1,21 @@
 import type { UserSummary } from '@music-room/shared';
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { Pressable } from 'react-native';
-import { Card, Text } from '@/ui';
+import type { ReactNode } from 'react';
+import { colors } from '@/theme';
+import { Avatar, ListItem } from '@/ui';
 
-// One person in a list (search results, friends, requests): opens their profile.
-export function PersonRow({ person, detail }: { person: UserSummary; detail?: string }) {
+// One person in a list (search results, friends, requests): opens their
+// profile. `trailing` replaces the chevron (e.g. Accept / Decline).
+export function PersonRow({ person, detail, trailing }: { person: UserSummary; detail?: string; trailing?: ReactNode }) {
   return (
-    <Pressable
+    <ListItem
+      title={person.displayName}
+      subtitle={detail ?? (person.bio || undefined)}
+      leading={<Avatar name={person.displayName} />}
+      trailing={trailing ?? <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />}
       onPress={() => router.push({ pathname: '/people/[id]', params: { id: person.id } })}
-      accessibilityRole="button"
       accessibilityLabel={`Open ${person.displayName}'s profile`}
-    >
-      <Card>
-        <Text numberOfLines={1}>{person.displayName}</Text>
-        {detail || person.bio ? (
-          <Text variant="muted" numberOfLines={1}>
-            {detail ?? person.bio}
-          </Text>
-        ) : null}
-      </Card>
-    </Pressable>
+    />
   );
 }

@@ -32,8 +32,8 @@ export default function ServerSettingsScreen() {
       const body = (await res.json().catch(() => null)) as { status?: string } | null;
       setTest(
         res.ok && body?.status === 'ok'
-          ? { ok: true, message: 'Music Room server reachable.' }
-          : { ok: false, message: `Something answered, but not a Music Room server (HTTP ${res.status}).` },
+          ? { ok: true, message: 'HOLY server reachable.' }
+          : { ok: false, message: `Something answered, but not a HOLY server (HTTP ${res.status}).` },
       );
     } catch {
       setTest({ ok: false, message: 'No answer from this address.' });

@@ -138,7 +138,7 @@ export default function EventInfoScreen() {
               variant="secondary"
               onPress={() =>
                 void Share.share({
-                  message: `Join "${event.name}" on Music Room with the code ${event.inviteCode}`,
+                  message: `Join "${event.name}" on HOLY with the code ${event.inviteCode}`,
                 })
               }
             />

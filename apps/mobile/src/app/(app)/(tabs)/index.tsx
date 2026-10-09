@@ -60,7 +60,7 @@ export default function HomeScreen() {
         }
       >
         <ScreenHeader
-          title={name ? `Hi, ${name.split(' ')[0]}` : 'Music Room'}
+          title={name ? `Hi, ${name.split(' ')[0]}` : 'HOLY'}
           subtitle="What are we listening to?"
           right={
             <Pressable onPress={() => router.push('/profile')} accessibilityRole="button" accessibilityLabel="My profile">

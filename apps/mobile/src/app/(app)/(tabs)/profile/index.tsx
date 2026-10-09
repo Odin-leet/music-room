@@ -261,7 +261,7 @@ export default function MyProfileScreen() {
       <Card>
         <ListItem
           title="Server settings"
-          subtitle="Which Music Room server this app talks to"
+          subtitle="Which HOLY server this app talks to"
           leading={<Ionicons name="server-outline" size={22} color={colors.accent} />}
           trailing={<Ionicons name="chevron-forward" size={18} color={colors.textMuted} />}
           onPress={() => router.push('/settings')}

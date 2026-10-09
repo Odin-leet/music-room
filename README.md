@@ -8,6 +8,8 @@ Mobile, collaborative, real-time music app:
 
 Every phone sees every change instantly. Profiles, friends and Google / Facebook sign-in come with it.
 
+**The app is branded HOLY.** "Music Room" stays the project's name (the brief, the repo, the API). The logo sources and the script that generates every icon file are in [`apps/mobile/assets/brand/`](apps/mobile/assets/brand/).
+
 ## Status against the brief
 
 | Part | State |

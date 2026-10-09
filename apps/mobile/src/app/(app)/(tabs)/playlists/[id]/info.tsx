@@ -111,7 +111,7 @@ export default function PlaylistInfoScreen() {
               variant="secondary"
               onPress={() =>
                 void Share.share({
-                  message: `Join the playlist "${playlist.name}" on Music Room with the code ${playlist.inviteCode}`,
+                  message: `Join the playlist "${playlist.name}" on HOLY with the code ${playlist.inviteCode}`,
                 })
               }
             />

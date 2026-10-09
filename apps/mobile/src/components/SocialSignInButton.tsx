@@ -11,7 +11,7 @@ function messageFor(err: unknown, name: string) {
       case 'account_exists':
         // Deliberately doesn't say *how* that account signs in (password or
         // Google): that would tell anyone with this email which method to attack.
-        return 'This email already has a Music Room account. Sign in the way you created it — with your password or another provider.';
+        return 'This email already has a HOLY account. Sign in the way you created it — with your password or another provider.';
       case 'email_required':
         return `Your ${name} account has no email address. Add one on ${name}, or register with email.`;
       case 'access_denied':

@@ -3,8 +3,9 @@ services:
     image: postgres:16-alpine
     container_name: music-room-postgres
     restart: unless-stopped
-    env_file:
-      - .env
+    # Only the DB settings: Compose reads .env itself for these ${…} values.
+    # (No env_file: the API's secrets have no business in this container, and
+    # editing one of them would recreate the database container.)
     environment:
       POSTGRES_USER: ${DB_USER:-music_room}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-music_room}

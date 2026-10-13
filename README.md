@@ -91,6 +91,7 @@ Run every command **from the repo root**. Starting Expo from the root with `npx 
 
 - **API docs:** Swagger UI at <http://localhost:3000/api-docs> (click **Authorize** and paste an `accessToken` to call protected routes). The same spec is in [`docs/openapi.json`](docs/openapi.json), and the real-time events in [`docs/realtime.md`](docs/realtime.md).
 - **Emails** (verification and reset codes) arrive in Mailpit: <http://localhost:8025>.
+- `make dev` does `db-up` + `migrate`, then runs the API and Expo together in one terminal (Ctrl+C stops both). Separate terminals (`make dev-api`, `make dev-mobile`) are easier to read.
 - `make help` lists every target.
 
 ### Configuration (`.env` at the repo root)

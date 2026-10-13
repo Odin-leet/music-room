@@ -19,7 +19,7 @@ help:
 	@echo "  Day to day:"
 	@echo "    make dev-api         Run the NestJS API in watch mode"
 	@echo "    make dev-mobile      Run the Expo dev server"
-	@echo "    make dev             Run API + Expo together"
+	@echo "    make dev             DB + migrations, then API + Expo together"
 	@echo "    make build           Build every workspace"
 	@echo "    make test            Run every workspace's tests"
 	@echo "    make load-test       k6 capacity ramp on a separate API + DB (see loadtests/README.md)"
@@ -50,8 +50,8 @@ install: env
 
 # --- database ---
 db-up:
-	docker compose up -d postgres mailpit
-	@echo "Postgres starting — run 'make db-logs' to watch it become healthy."
+	docker compose up -d --wait postgres mailpit
+	@echo "Postgres is up (healthy)."
 	@echo "Mailpit (dev email inbox): http://localhost:8025"
 
 db-down:
@@ -83,8 +83,10 @@ dev-api:
 dev-mobile:
 	npm run start --workspace=apps/mobile
 
-dev:
-	npx concurrently -n API,MOBILE -c blue,green \
+# Starts the database and applies migrations first, then API + Expo in one
+# terminal (concurrently is a root devDependency: no npx download prompt).
+dev: db-up migrate
+	npx --no-install concurrently -k -n API,MOBILE -c blue,green \
 		"npm run start:dev --workspace=apps/api" \
 		"npm run start --workspace=apps/mobile"
 

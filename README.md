@@ -16,7 +16,7 @@ Every phone sees every change instantly. Profiles, friends and Google / Facebook
 |---|---|
 | **V.1 User**: email/password with verification + reset, Google and Facebook sign-in, **linking** them to an existing account, **four profile visibility tiers** (public / friends / private / music preferences), friends | ✅ Done |
 | **V.2.1 Music Track Vote**: events, visibility, three voting licenses, ranked queue, live updates, playback | ✅ Done |
-| V.2.2 Music Control Delegation | ✂️ Not built (scope decision: two services out of three) |
+| V.2.2 Music Control Delegation | ✂️ Not built (scope decision: two services out of three). Designed in [`docs/control-delegation.md`](docs/control-delegation.md) |
 | **V.2.3 Music Playlist Editor**: shared playlists, visibility + edit license, add / remove / **reorder without locks**, live updates, playback | ✅ Done |
 | **V.4 API docs**: Swagger UI with full schemas, [`docs/openapi.json`](docs/openapi.json), [`docs/realtime.md`](docs/realtime.md) | ✅ Done |
 | **V.5 Mobile**: React Native (Expo); the **server address is a setting in the app** | ✅ Done |

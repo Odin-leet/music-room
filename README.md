@@ -122,6 +122,16 @@ Run every command **from the repo root**. Starting Expo from the root with `npx 
 - **developers.facebook.com** → Create App with the Facebook Login use case, add the **`email`** permission, and keep it in **Development mode** (localhost redirects are allowed automatically; only people with a role on the app can log in) → App ID and App Secret in `.env`.
 - Both redirect to `http://localhost:3000`, which reaches the API from the emulator thanks to `adb reverse`. No tunnel needed.
 
+### Testing on a real phone (optional)
+
+The emulator reaches the API through `adb reverse`. A phone can't reach `localhost` on your Mac, and Google / Facebook must send the phone's browser back to a **public HTTPS** address. So:
+
+1. In the root `.env`: `NGROK_DOMAIN` (a free static domain from the ngrok dashboard) and `NGROK_AUTHTOKEN`. The API opens the tunnel itself at startup and logs `Public tunnel: https://…`.
+2. Still in `.env`: `GOOGLE_REDIRECT_URI=https://<domain>/auth/google/callback` and `FACEBOOK_REDIRECT_URI=https://<domain>/auth/facebook/callback`, and **register both** (Google Cloud → OAuth client → Authorized redirect URIs; Facebook Login → Valid OAuth Redirect URIs).
+3. In the app: **Server settings → `https://<domain>`** (or `EXPO_PUBLIC_API_URL` in `apps/mobile/.env`), and start Expo with `--tunnel` if the phone isn't on the same Wi-Fi.
+
+ngrok's free plan shows a warning page in the browser the first time: tap **Visit Site**. Remove the two `*_REDIRECT_URI` lines to go back to `localhost` (emulator).
+
 ---
 
 ## Features

@@ -31,7 +31,12 @@ async function bootstrap() {
       ].join('\n'),
     )
     .setVersion('1.0')
-    .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT', description: 'The accessToken from /auth/login' })
+    .addBearerAuth({
+      type: 'http',
+      scheme: 'bearer',
+      bearerFormat: 'JWT',
+      description: 'The accessToken from /auth/login',
+    })
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
@@ -45,5 +50,20 @@ async function bootstrap() {
   const port = Number(process.env.API_PORT ?? 3000);
   await app.listen(port);
   console.log(`API is running on http://localhost:${port}`);
+
+  // Optional public HTTPS address, to test on a real phone: Google / Facebook
+  // send the browser back to a public URL, which `localhost` isn't on a phone.
+  // Only when NGROK_DOMAIN is set (your .env), so CI and the load tests' second
+  // instance never open it. See README → "Testing on a real phone".
+  const domain = process.env.NGROK_DOMAIN?.trim();
+  if (domain) {
+    try {
+      const ngrok = await import('@ngrok/ngrok');
+      const listener = await ngrok.forward({ addr: port, domain, authtoken: process.env.NGROK_AUTHTOKEN?.trim() });
+      console.log(`Public tunnel: ${listener.url()} -> http://localhost:${port}`);
+    } catch (error) {
+      console.error('ngrok tunnel not opened (the API keeps running locally):', error);
+    }
+  }
 }
 void bootstrap();

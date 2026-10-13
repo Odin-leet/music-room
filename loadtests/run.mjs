@@ -96,6 +96,9 @@ async function runProfile(profile) {
       RATE_LIMIT_PER_MINUTE: '1000000',
       AUTH_ATTEMPTS_PER_ACCOUNT_PER_MINUTE: '1000000',
       AUTH_ATTEMPTS_PER_IP_PER_MINUTE: '1000000',
+      // Never open the dev API's public tunnel from this second instance
+      // (set to empty: .env doesn't override a variable that already exists).
+      NGROK_DOMAIN: '',
     },
     stdio: ['ignore', apiLog, apiLog],
   });

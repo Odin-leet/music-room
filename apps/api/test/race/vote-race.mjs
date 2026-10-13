@@ -98,6 +98,29 @@ async function main() {
     // Every user fires twice, all 20 requests in the same instant.
     await Promise.all(tokens.flatMap((token) => [call('POST', path2, { token, body: {} }), call('POST', path2, { token, body: {} })]));
     check('score = number of distinct voters', await scoreOf(owner, eventId, second.data.id), USERS);
+
+    console.log('\nE. ranking: score first, ties broken by the earliest suggestion');
+    const rankEvent = await call('POST', '/events', { token: owner, body: { name: `Ranking test ${Date.now()}`, visibility: 'public' } });
+    const rid = rankEvent.data.id;
+    try {
+      // Suggested one after the other: t1 is the oldest, t3 the newest.
+      const ids = [];
+      for (const providerTrackId of [TRACK_ID, '3157685', '3135556']) {
+        ids.push((await call('POST', `/events/${rid}/tracks`, { token: owner, body: { providerTrackId } })).data.id);
+      }
+      const [t1, t2, t3] = ids;
+      const order = async () =>
+        (await call('GET', `/events/${rid}/queue`, { token: owner })).data.upcoming.map((t) => ids.indexOf(t.id) + 1).join(',');
+      check('no votes: oldest first', await order(), '1,2,3');
+      await call('POST', `/events/${rid}/tracks/${t3}/vote`, { token: tokens[1], body: {} });
+      check('t3 gets a vote: it goes first, the rest by age', await order(), '3,1,2');
+      await call('POST', `/events/${rid}/tracks/${t2}/vote`, { token: tokens[2], body: {} });
+      check('t2 ties t3 (1 vote each): the older t2 first', await order(), '2,3,1');
+      await call('POST', `/events/${rid}/tracks/${t1}/vote`, { token: tokens[3], body: {} });
+      check('all three tied: back to oldest first', await order(), '1,2,3');
+    } finally {
+      await call('DELETE', `/events/${rid}`, { token: owner });
+    }
   } finally {
     await call('DELETE', `/events/${eventId}`, { token: owner }); // clean up
   }

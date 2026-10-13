@@ -182,6 +182,19 @@ export interface QueueTrack extends TrackSummary {
   votedByMe: boolean;
 }
 
+// The queue's ranking rule (the API orders the same way in SQL): most votes
+// first; at equal votes the EARLIEST suggestion first, so two tracks with the
+// same score never swap places; the id last only to make it fully
+// deterministic. Plain comparisons (ISO dates and uuids sort as text).
+export function compareQueueTracks(
+  a: { score: number; suggestedAt: string; id: string },
+  b: { score: number; suggestedAt: string; id: string },
+): number {
+  if (a.score !== b.score) return b.score - a.score;
+  if (a.suggestedAt !== b.suggestedAt) return a.suggestedAt < b.suggestedAt ? -1 : 1;
+  return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+}
+
 // GET /events/:id/queue
 export interface QueueView {
   nowPlaying: QueueTrack | null;

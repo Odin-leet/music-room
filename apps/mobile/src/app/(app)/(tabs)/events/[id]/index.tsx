@@ -1,4 +1,4 @@
-import type { BroadcastTrack, EventView, QueueTrack, QueueView, VoteResult } from '@music-room/shared';
+import { compareQueueTracks, type BroadcastTrack, type EventView, type QueueTrack, type QueueView, type VoteResult } from '@music-room/shared';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,10 +14,9 @@ import { useSession } from '@/session/SessionProvider';
 import { colors, font, radius, spacing } from '@/theme';
 import { Button, Cover, EmptyState, IconButton, ListItem, LiveDot, ScreenHeader, SectionHeader, Text } from '@/ui';
 
-// The server's ranking rule, applied locally right after an optimistic vote
-// so the list reorders instantly; the next broadcast confirms it.
-const byRank = (a: QueueTrack, b: QueueTrack) =>
-  b.score - a.score || a.suggestedAt.localeCompare(b.suggestedAt) || a.id.localeCompare(b.id);
+// The server's ranking rule (shared), applied locally right after an
+// optimistic vote so the list reorders instantly; the next broadcast confirms it.
+const byRank = (a: QueueTrack, b: QueueTrack) => compareQueueTracks(a, b);
 
 export default function EventQueueScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();

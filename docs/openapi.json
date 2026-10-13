@@ -469,6 +469,9 @@
           },
           "409": {
             "description": "Email is already registered"
+          },
+          "429": {
+            "description": "Too many attempts: 10 a minute per IP + email, 100 a minute per IP (Retry-After header). After 5 wrong passwords an account is locked for 15 minutes (retryAfterSeconds in the body)."
           }
         },
         "summary": "Create an email + password account; a 6-digit verification code is emailed",
@@ -504,6 +507,9 @@
           },
           "401": {
             "description": "Invalid email or password (same message and timing for every failure)"
+          },
+          "429": {
+            "description": "Too many attempts: 10 a minute per IP + email, 100 a minute per IP (Retry-After header). After 5 wrong passwords an account is locked for 15 minutes (retryAfterSeconds in the body)."
           }
         },
         "summary": "Log in with email + password",
@@ -595,6 +601,9 @@
           },
           "401": {
             "description": "Missing, invalid or expired access token"
+          },
+          "429": {
+            "description": "Too many attempts: 10 a minute per IP + email, 100 a minute per IP (Retry-After header). After 5 wrong passwords an account is locked for 15 minutes (retryAfterSeconds in the body)."
           }
         },
         "security": [
@@ -623,7 +632,7 @@
             "description": "Missing, invalid or expired access token"
           },
           "429": {
-            "description": "Wait before requesting another code (60 s)"
+            "description": "Too many attempts: 10 a minute per IP + email, 100 a minute per IP (Retry-After header). After 5 wrong passwords an account is locked for 15 minutes (retryAfterSeconds in the body).\n\nWait before requesting another code (60 s)"
           }
         },
         "security": [
@@ -654,6 +663,9 @@
         "responses": {
           "204": {
             "description": ""
+          },
+          "429": {
+            "description": "Too many attempts: 10 a minute per IP + email, 100 a minute per IP (Retry-After header). After 5 wrong passwords an account is locked for 15 minutes (retryAfterSeconds in the body)."
           }
         },
         "summary": "Email a password-reset code if the account exists (always 204: never reveals whether it does)",
@@ -682,6 +694,9 @@
           },
           "400": {
             "description": "Invalid or expired code (one message for every failure)"
+          },
+          "429": {
+            "description": "Too many attempts: 10 a minute per IP + email, 100 a minute per IP (Retry-After header). After 5 wrong passwords an account is locked for 15 minutes (retryAfterSeconds in the body)."
           }
         },
         "summary": "Set a new password with the emailed code; ends every session",
@@ -717,6 +732,9 @@
           },
           "400": {
             "description": "Invalid, expired or already used code, or wrong verifier"
+          },
+          "429": {
+            "description": "Too many attempts: 10 a minute per IP + email, 100 a minute per IP (Retry-After header). After 5 wrong passwords an account is locked for 15 minutes (retryAfterSeconds in the body)."
           }
         },
         "summary": "End of a social login: trade the single-use code from the return link + your PKCE verifier for tokens",
@@ -2366,7 +2384,7 @@
   },
   "info": {
     "title": "Music Room API",
-    "description": "REST API of Music Room (Track Vote events, accounts, music search).\n\n**Auth:** log in with `POST /auth/login` (or a social login), then click **Authorize** and paste the `accessToken`.\nAccess tokens last 15 minutes; get a new pair with `POST /auth/refresh`.\n\n**Real-time** (Socket.IO namespace `/events`): see `docs/realtime.md` in the repository.",
+    "description": "REST API of Music Room (app: HOLY): accounts and profiles, friends, music search, Track Vote events and Playlist Editor playlists.\n\n**Auth:** log in with `POST /auth/login` (or a social login), then click **Authorize** and paste the `accessToken`.\nAccess tokens last 15 minutes; get a new pair with `POST /auth/refresh`. `GET /users/:id` and `GET /users?q=` also work without a token (public info only).\n\n**Rate limits:** 300 requests a minute per user (per IP without a token); login, register, codes and password reset are stricter (see their 429). Over a limit: `429` + `Retry-After`.\n\n**Real-time** (Socket.IO namespaces `/events`, `/playlists`, `/me`): see `docs/realtime.md` in the repository.",
     "version": "1.0",
     "contact": {}
   },
@@ -3237,6 +3255,11 @@
               }
             ]
           },
+          "cover": {
+            "type": "string",
+            "nullable": true,
+            "description": "A picture for lists: the playing track's cover, else the next one's (null if none has one)."
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -3260,6 +3283,7 @@
           "myRole",
           "inviteCode",
           "participation",
+          "cover",
           "createdAt",
           "id",
           "name",
@@ -3752,6 +3776,13 @@
           },
           "trackCount": {
             "type": "number"
+          },
+          "covers": {
+            "description": "Up to 4 covers of the first tracks, in playlist order (a 2x2 mosaic in lists).",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "required": [
@@ -3766,7 +3797,8 @@
           "id",
           "name",
           "description",
-          "trackCount"
+          "trackCount",
+          "covers"
         ]
       },
       "UpdatePlaylistDto": {

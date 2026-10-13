@@ -22,12 +22,14 @@ async function bootstrap() {
     .setTitle('Music Room API')
     .setDescription(
       [
-        'REST API of Music Room (Track Vote events, accounts, music search).',
+        'REST API of Music Room (app: HOLY): accounts and profiles, friends, music search, Track Vote events and Playlist Editor playlists.',
         '',
         '**Auth:** log in with `POST /auth/login` (or a social login), then click **Authorize** and paste the `accessToken`.',
-        'Access tokens last 15 minutes; get a new pair with `POST /auth/refresh`.',
+        'Access tokens last 15 minutes; get a new pair with `POST /auth/refresh`. `GET /users/:id` and `GET /users?q=` also work without a token (public info only).',
         '',
-        '**Real-time** (Socket.IO namespace `/events`): see `docs/realtime.md` in the repository.',
+        '**Rate limits:** 300 requests a minute per user (per IP without a token); login, register, codes and password reset are stricter (see their 429). Over a limit: `429` + `Retry-After`.',
+        '',
+        '**Real-time** (Socket.IO namespaces `/events`, `/playlists`, `/me`): see `docs/realtime.md` in the repository.',
       ].join('\n'),
     )
     .setVersion('1.0')

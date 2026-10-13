@@ -1,4 +1,5 @@
-import { SetMetadata, type ExecutionContext } from '@nestjs/common';
+import { applyDecorators, SetMetadata, type ExecutionContext } from '@nestjs/common';
+import { ApiTooManyRequestsResponse } from '@nestjs/swagger';
 import type { JwtService } from '@nestjs/jwt';
 import type { ThrottlerModuleOptions } from '@nestjs/throttler';
 import type { Request } from 'express';
@@ -18,8 +19,16 @@ import type { JwtPayload } from '../auth/jwt.strategy';
 // Over a limit: 429 with Retry-After.
 
 const AUTH_ATTEMPT = 'rate-limit:auth-attempt';
-// Marks the routes where someone could guess a password or a code.
-export const AuthAttempt = () => SetMetadata(AUTH_ATTEMPT, true);
+// Marks the routes where someone could guess a password or a code — and
+// documents their 429 in Swagger, so the docs can't drift from the limits.
+export const AuthAttempt = () =>
+  applyDecorators(
+    SetMetadata(AUTH_ATTEMPT, true),
+    ApiTooManyRequestsResponse({
+      description:
+        'Too many attempts: 10 a minute per IP + email, 100 a minute per IP (Retry-After header). After 5 wrong passwords an account is locked for 15 minutes (retryAfterSeconds in the body).',
+    }),
+  );
 const isAuthAttempt = (ctx: ExecutionContext) =>
   Reflect.getMetadata(AUTH_ATTEMPT, ctx.getHandler()) === true;
 

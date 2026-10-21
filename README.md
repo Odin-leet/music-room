@@ -2,11 +2,11 @@
 
 [![CI](https://github.com/Odin-leet/music-room/actions/workflows/ci.yml/badge.svg)](https://github.com/Odin-leet/music-room/actions/workflows/ci.yml)
 
-Mobile, collaborative, real-time music app:
+Collaborative, real-time music app, on mobile and on the web:
 - **Track Vote:** people gather around an event's live queue, suggest tracks and vote on what plays next.
 - **Playlist Editor:** people build a playlist together, adding, removing and reordering tracks at the same time.
 
-Every phone sees every change instantly. Profiles, friends and Google / Facebook sign-in come with it.
+Every phone and browser sees every change instantly. Profiles, friends and Google / Facebook sign-in come with it.
 
 **The app is branded HOLY.** "Music Room" stays the project's name (the brief, the repo, the API). The logo sources and the script that generates every icon file are in [`apps/mobile/assets/brand/`](apps/mobile/assets/brand/).
 
@@ -23,12 +23,14 @@ Every phone sees every change instantly. Profiles, friends and Google / Facebook
 | **V.6 Security**: action log (platform / device / app version), rate limits + lockout, ownership audit, see [`docs/security.md`](docs/security.md) | ✅ Done |
 | **V.7 Ramp-up**: k6 baseline / capacity ramp / spike on a stated machine. **About 200 concurrent users** within the limits; slow but never failing up to 800. See [`loadtests/README.md`](loadtests/README.md) | ✅ Done |
 | **V.8 CI**: GitHub Actions on every push: lint, types, unit tests, build, then the concurrency / realtime / security scripts against a real Postgres | ✅ Done |
+| **Bonus: web app** ([`apps/web`](apps/web)): a responsive React version of everything the mobile app does (sign-in incl. Google / Facebook, profile tiers, friends, Track Vote with playback, Playlist Editor with drag-and-drop), same API, same live updates, same HOLY look. See [Web app](#web-app-bonus) | ✅ Done |
 
 ## Architecture
 
 | Layer | Choice | Why |
 |---|---|---|
 | Mobile | React Native + **Expo SDK 57** (expo-router) | One codebase, demoable on Android and iOS; runs in Expo Go during development |
+| Web | **React 19 + Vite 8** (React Router 7, dnd-kit) | The same screens for a browser: sidebar on wide screens, bottom tabs on phones. Talks to the same API and sockets, shares the same types |
 | Backend | **NestJS 12** (Node ≥ 22.18) | A module per area; dependency injection keeps services testable; guards enforce access per request; Socket.IO for real-time |
 | Database | **PostgreSQL 16 + TypeORM** | Real transactions and constraints for what must be right under concurrency (votes, playback, playlist order, friendships). The schema only changes through migrations |
 | Music | **Deezer public API** | Search + 30-second previews without an API key or OAuth. Always called through our API |
@@ -50,9 +52,10 @@ music-room/
 │   └── security.md           # threats -> protections -> tests, accepted risks
 ├── apps/
 │   ├── api/                  # NestJS API
-│   └── mobile/               # Expo app (.env.example for the default API address)
+│   ├── mobile/               # Expo app (.env.example for the default API address)
+│   └── web/                  # React web app (Vite; .env.example for the default API address)
 └── packages/
-    └── shared/               # types (and a few constants) shared by api and mobile
+    └── shared/               # types (and a few constants) shared by api, mobile and web
 ```
 
 Only Postgres and Mailpit run in Docker. The API and Expo run on the host on purpose: Docker Desktop's file watching is unreliable for `nest start --watch`, and Expo's LAN discovery doesn't work well from inside a container.
@@ -87,11 +90,17 @@ adb reverse tcp:3000 tcp:3000 # after every emulator start (needed for Google/Fa
 make dev-mobile               # Expo — press a to open on Android, r to reload
 ```
 
+And the web app, in a browser:
+
+```bash
+make dev-web                  # http://localhost:5173 — talks to the API on :3000
+```
+
 Run every command **from the repo root**. Starting Expo from the root with `npx expo start` gives "Unable to resolve ../../App"; use `make dev-mobile`, or `npm run start --workspace=apps/mobile -- -c` to also clear its cache.
 
 - **API docs:** Swagger UI at <http://localhost:3000/api-docs> (click **Authorize** and paste an `accessToken` to call protected routes). The same spec is in [`docs/openapi.json`](docs/openapi.json), and the real-time events in [`docs/realtime.md`](docs/realtime.md).
 - **Emails** (verification and reset codes) arrive in Mailpit: <http://localhost:8025>.
-- `make dev` does `db-up` + `migrate`, then runs the API and Expo together in one terminal (Ctrl+C stops both). Separate terminals (`make dev-api`, `make dev-mobile`) are easier to read.
+- `make dev` does `db-up` + `migrate`, then runs the API, Expo and the web app together in one terminal (Ctrl+C stops all three). Separate terminals (`make dev-api`, `make dev-mobile`, `make dev-web`) are easier to read.
 - `make help` lists every target.
 
 ### Configuration (`.env` at the repo root)
@@ -105,6 +114,7 @@ Run every command **from the repo root**. Starting Expo from the root with `npx 
 | `MAIL_HOST` (`localhost`), `MAIL_PORT` (`1025`), `MAIL_USER`, `MAIL_PASSWORD`, `MAIL_FROM` | SMTP. Defaults point at Mailpit; use a real provider in production |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google sign-in (see below) |
 | `FACEBOOK_APP_ID`, `FACEBOOK_APP_SECRET` | Facebook login (see below) |
+| `WEB_ORIGINS` (`http://localhost:5173,http://127.0.0.1:5173`) | The web app's origins, comma-separated: the only pages allowed to call the API from a browser (CORS), and where a social login may return to (`<origin>/oauth`) |
 | `RATE_LIMIT_PER_MINUTE` (300), `AUTH_ATTEMPTS_PER_ACCOUNT_PER_MINUTE` (10), `AUTH_ATTEMPTS_PER_IP_PER_MINUTE` (100) | Optional: rate limits (see [docs/security.md](docs/security.md)) |
 
 **The app's server address.** In the app: **Server settings**, from the login screen ("Server: … · change") or from Home. It's saved on the phone, so an evaluator can point the app at their own server without rebuilding it. Its **default** comes from `apps/mobile/.env` (Expo doesn't read the root `.env`):
@@ -185,6 +195,23 @@ A **playlist** is built together, by several people at once.
 - **Listen:** previews play on *your* phone, in the live order, and move on by themselves.
 
 ---
+
+### Web app (bonus)
+
+[`apps/web`](apps/web) is the same app for a browser: every screen of the mobile app, against the same API, with the same live updates and the same HOLY palette (the tokens of `apps/mobile/src/theme.ts`, as CSS variables). **Wide screens** get a sidebar and a full-width player at the bottom; the party page shows *now playing* and the queue side by side. **Phones** get the mobile layout: bottom tabs with the player right above them.
+
+What works differently in a browser:
+
+| | Mobile | Web |
+|---|---|---|
+| **Social login** | In-app auth sheet, back to `exp://…` / `musicroom://` | A full-page redirect to Google / Facebook and back to `/oauth`. The PKCE verifier waits in `sessionStorage` (this tab only). The API accepts `/oauth` only on an origin listed in `WEB_ORIGINS` |
+| **Refresh token** | Keychain / Keystore | `localStorage`. **Every tab shares it**, and the API treats a reused refresh token as theft, so refreshes are serialised across tabs with the Web Locks API (each one reads the latest token). Signing out in one tab signs out the others |
+| **Reordering a playlist** | Long-press and drag, or the arrows | Drag the handle (mouse or touch), the **keyboard** (focus the handle, Space, arrows, Space), or the arrows |
+| **Playback** | `expo-audio` | One `<audio>` element for the whole app. Media keys and the OS's "now playing" work (Media Session API), there's a volume control, and the tab's title shows the track |
+| **Location** (geo events) | `expo-location` | The browser's geolocation (https or localhost only) |
+| **Server address** (V.5) | Server settings, saved on the phone | Server settings, saved in the browser. That server must list the page's origin in `WEB_ORIGINS` |
+
+The owner can also edit an event's settings on the web (name, visibility, who can vote; switching to *On site, on time* re-centres it on where you are).
 
 ## API overview
 
@@ -267,7 +294,7 @@ The full write-up is [`docs/security.md`](docs/security.md): every threat from t
 ## Tests
 
 ```bash
-make test                                            # 51 unit tests (access rules, positions, PKCE…)
+make test                                            # 67 unit tests: API 63 (access rules, positions, ranking, return addresses…), web 4 (PKCE)
 make load-test                                       # k6 capacity ramp on a separate API + DB (loadtests/README.md)
 
 # against the running API:

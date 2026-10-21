@@ -2,7 +2,7 @@
   "name": "@music-room/shared",
   "version": "0.0.1",
   "private": true,
-  "description": "TypeScript contracts shared between apps/api and apps/mobile, so both agree on data shapes without duplicating them.",
+  "description": "TypeScript contracts shared between apps/api, apps/mobile and apps/web, so both agree on data shapes without duplicating them.",
   "main": "src/index.ts",
   "types": "src/index.ts"
 }

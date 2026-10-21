@@ -4,7 +4,7 @@ ENV_FILE := .env
 .PHONY: help env install scaffold-api scaffold-mobile \
         db-up db-down db-logs db-shell \
         migrate migration-generate migration-revert \
-        dev dev-api dev-mobile build test lint load-test clean
+        dev dev-api dev-mobile dev-web build test lint load-test clean
 
 help:
 	@echo "Music Room — make targets"
@@ -19,7 +19,8 @@ help:
 	@echo "  Day to day:"
 	@echo "    make dev-api         Run the NestJS API in watch mode"
 	@echo "    make dev-mobile      Run the Expo dev server"
-	@echo "    make dev             DB + migrations, then API + Expo together"
+	@echo "    make dev-web         Run the web app (http://localhost:5173)"
+	@echo "    make dev             DB + migrations, then API + Expo + web together"
 	@echo "    make build           Build every workspace"
 	@echo "    make test            Run every workspace's tests"
 	@echo "    make load-test       k6 capacity ramp on a separate API + DB (see loadtests/README.md)"
@@ -83,12 +84,16 @@ dev-api:
 dev-mobile:
 	npm run start --workspace=apps/mobile
 
-# Starts the database and applies migrations first, then API + Expo in one
+dev-web:
+	npm run dev --workspace=apps/web
+
+# Starts the database and applies migrations first, then API + Expo + web in one
 # terminal (concurrently is a root devDependency: no npx download prompt).
 dev: db-up migrate
-	npx --no-install concurrently -k -n API,MOBILE -c blue,green \
+	npx --no-install concurrently -k -n API,MOBILE,WEB -c blue,green,magenta \
 		"npm run start:dev --workspace=apps/api" \
-		"npm run start --workspace=apps/mobile"
+		"npm run start --workspace=apps/mobile" \
+		"npm run dev --workspace=apps/web"
 
 build:
 	npm run build --workspaces --if-present

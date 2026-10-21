@@ -17,12 +17,13 @@ The rule everything follows: **the server decides**. The app is a remote control
 | **Stolen refresh token** | Random (not a JWT), stored **hashed** (SHA-256), in the phone's secure store. **Rotated** on every use; reusing an old one **revokes every session** of that user (theft detection) | (auth tests, earlier logs) |
 | **Leaked password database** | bcrypt, cost 12. Login takes the same time for unknown emails (dummy hash), so it doesn't reveal which emails exist | — |
 | **Guessing an email code** (verification, reset) | Codes hashed with a purpose + the user id, valid 15 min, **5 attempts** counted atomically, 60 s between resends. A password reset ends every session | (auth tests) |
-| **Social login abuse** | Signed 10-min `state` bound to its provider. Return links allowed to the app only. Google **ID token verified**; Facebook calls carry `appsecret_proof`. The app gets a single-use 60 s code protected by **PKCE**, used up atomically. No automatic linking through Facebook (it doesn't say whether the email is verified) | `test:links` (state) |
+| **Social login abuse** | Signed 10-min `state` bound to its provider. Return links allowed to the app's deep links, or the web app's `/oauth` page on an **exact** origin from `WEB_ORIGINS` (no query, no fragment, no look-alike host: `app-redirect.spec.ts`). Google **ID token verified**; Facebook calls carry `appsecret_proof`. The app gets a single-use 60 s code protected by **PKCE**, used up atomically. No automatic linking through Facebook (it doesn't say whether the email is verified) | `test:links` (state) |
 | **Login CSRF on account linking**: getting a victim to attach their Google to *your* account | The browser only brings back a 60-second ticket; linking needs the **same logged-in user** + the PKCE verifier of the app that started it | `test:links` |
 | **Locking yourself out** | You can't unlink your last way to sign in: one atomic `UPDATE … WHERE another method remains` (two simultaneous unlinks can't both pass) | `test:links` |
 | **Someone else's ids** (IDOR) | Access rules as pure functions (`canView`, `canParticipate`, `canEdit`, `profileFor`), used by **every** REST route and socket join. Private things answer **404** (existence hidden), owner-only and invited-only answer **403**, and a track id is always looked up **inside** the event or playlist in the URL | **`test:idor`**: 57 attacks with another user's token, then a full snapshot of the victim's data is compared |
 | **Mass assignment** (`ownerId`, `email`, `passwordHash`… in a body) | Global validation: `whitelist` + **`forbidNonWhitelisted`**, so any field a route doesn't declare is a 400 | `test:idor` |
 | **Double votes / double edits** under concurrency | Database constraints, not app checks: one vote per (user, track), a song queued once, one playing track per event, one position per playlist slot, one friendship row per pair. Counters change with atomic `score ± 1` | `test:race`, `test:playlist-race`, `test:friends-race` |
+| **Another website calling the API** with a visitor's browser | CORS for REST allows only the web app's origins (`WEB_ORIGINS`), and only the headers the app sends. Tokens travel in the `Authorization` header, never in cookies, so a foreign page has nothing to ride on | `curl -H 'Origin: https://evil.example' -X OPTIONS …` gets no allow header |
 | **Realtime eavesdropping** | Token checked **before** a socket connects. Event / playlist rooms use the same access rules as REST. On `/me` the room is chosen from the token. When access changes, sockets that lost it are removed | `test:realtime`, `test:playlist-realtime`, `test:me-realtime` |
 | **Secrets in the repo** | `.env` is git-ignored; `.env.example` has placeholders only. See [§4](#4-secrets) for what happened in the very first commit | history scan, [§4](#4-secrets) |
 | **Local services reachable from the network** | Postgres and Mailpit listen on **127.0.0.1 only** (`docker-compose.yml`) | `docker compose ps` |
@@ -68,7 +69,7 @@ Every action from the app produces one JSON line in the API's output (the brief 
   - **`JWT_ACCESS_SECRET`: the placeholder `change-me`**, which was still in use until 7 Oct 2026. Anyone could have signed tokens. **Replaced.**
   - **The local dev database password**, still in use. Postgres now listens on 127.0.0.1 only, so the password alone doesn't give access from another machine.
 - **Why the history wasn't rewritten:** no real third-party secret leaked, and rewriting published history would break every clone and branch. A real deployment must use **its own** database password and secret anyway.
-- **What the app contains:** the app's `.env` only holds the API address (`EXPO_PUBLIC_*` values are built into the app, so never secrets).
+- **What the apps contain:** the mobile and web `.env` files only hold the API address (`EXPO_PUBLIC_*` / `VITE_*` values are built into the app, so never secrets).
 
 ## 5. Accepted risks (known, not fixed)
 
@@ -79,7 +80,7 @@ Every action from the app produces one JSON line in the API's output (the brief 
 | **The lock message reveals an account exists** | Only after 5 failed attempts on that email, and those are rate-limited. Otherwise login answers the same for unknown emails |
 | **Limits and socket rooms live in memory** | Fine for one server. Several servers would need a shared store (Redis for the throttler and the Socket.IO adapter) |
 | **No HTTPS in development** | Production must run behind TLS. Over plain HTTP on a shared Wi-Fi, tokens could be read |
-| **No CORS for REST** | Browsers on other origins can't call the API; the mobile app doesn't use CORS. Enable it for specific origins if a web client is added |
+| **Web: refresh token in `localStorage`** | Any script running on the web app's origin could read it (XSS). The app renders no HTML from the API (React escapes all text), loads no third-party script, and the token is rotated on every use with reuse detection. An httpOnly cookie would need CSRF protection and a same-site API: not worth it for this project |
 | **Invite codes can be guessed** | 8 characters from 31 → 8.5 × 10¹¹ codes; at 300 requests/min that's thousands of years |
 | **People search is public** | It only returns public info (name, bio), by design of V.1, and is rate-limited |
 

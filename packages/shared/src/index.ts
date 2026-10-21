@@ -1,4 +1,4 @@
-// Shared TypeScript contracts between apps/api and apps/mobile.
+// Shared TypeScript contracts between apps/api, apps/mobile and apps/web.
 //
 // This is the "link" between the two apps: the mobile client imports these
 // same types instead of redefining its own guess at what the API returns,

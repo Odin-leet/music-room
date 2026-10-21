@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 ENV_FILE := .env
 
-.PHONY: help env install scaffold-api scaffold-mobile \
+.PHONY: help setup start start-web logs env install scaffold-api scaffold-mobile \
         db-up db-down db-logs db-shell \
         migrate migration-generate migration-revert \
         dev dev-api dev-mobile dev-web build test lint load-test clean
@@ -9,7 +9,13 @@ ENV_FILE := .env
 help:
 	@echo "Music Room — make targets"
 	@echo ""
-	@echo "  First-time setup, in order:"
+	@echo "  On any laptop (needs Docker Desktop + Node 22):"
+	@echo "    make start           Everything: setup if needed, then API + web + Expo (Ctrl+C stops all)"
+	@echo "    make start-web       The same without Expo (API + web only)"
+	@echo "    make setup           Only the setup: tools check, .env files, packages, database, migrations"
+	@echo "    make logs            Follow the API + web logs while make start runs"
+	@echo ""
+	@echo "  First-time setup by hand, in order:"
 	@echo "    make env             Create .env from .env.example"
 	@echo "    make scaffold-api    Generate apps/api with the NestJS CLI (once)"
 	@echo "    make scaffold-mobile Generate apps/mobile with Expo (once)"
@@ -32,6 +38,20 @@ help:
 	@echo "    make migration-generate name=AddPlaylist   Generate a migration from entity changes"
 	@echo "    make migration-revert                       Undo the last-applied migration"
 	@echo "    make clean           Remove node_modules, build output, Expo cache"
+
+# ---------- one command (scripts/setup.sh, scripts/start.sh) ----------
+setup:
+	@./scripts/setup.sh
+
+start:
+	@./scripts/start.sh
+
+start-web:
+	@MOBILE=0 ./scripts/start.sh
+
+logs:
+	@mkdir -p .logs && touch .logs/servers.log
+	@tail -n 50 -f .logs/servers.log
 
 env:
 	@test -f $(ENV_FILE) || cp .env.example $(ENV_FILE)

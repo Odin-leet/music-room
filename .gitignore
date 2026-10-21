@@ -47,3 +47,6 @@ coverage/
 apps/api/dist-load/
 loadtests/.data/
 loadtests/results/*.log
+
+# make start (scripts/start.sh)
+.logs/

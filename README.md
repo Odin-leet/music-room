@@ -8,6 +8,8 @@ Collaborative, real-time music app, on mobile and on the web:
 
 Every phone and browser sees every change instantly. Profiles, friends and Google / Facebook sign-in come with it.
 
+**How it works inside:** the technical documentation in [`docs/technical/`](docs/technical/README.md) (architecture, data model, sign-in, each feature, the apps).
+
 **The app is branded HOLY.** "Music Room" stays the project's name (the brief, the repo, the API). The logo sources and the script that generates every icon file are in [`apps/mobile/assets/brand/`](apps/mobile/assets/brand/).
 
 ## Status against the brief
@@ -63,6 +65,18 @@ Only Postgres and Mailpit run in Docker. The API and Expo run on the host on pur
 ---
 
 ## Getting started
+
+**One command, on any laptop** with Docker Desktop and Node ≥ 22.18:
+
+```bash
+git clone <your-repo-url> music-room && cd music-room
+cp /path/to/your/.env .env    # optional: your .env with the Google / Facebook keys
+make start                    # setup if needed (tools, .env files, packages, DB, migrations), then API + web + Expo
+```
+
+It prints the addresses (web app, API docs, Mailpit, the address for a phone) and keeps Expo in the foreground with its QR code; Ctrl+C stops everything. `make start-web` does the same without Expo, `make logs` follows the server logs. What each step does: [docs/technical/01-running.md](docs/technical/01-running.md).
+
+The same, step by step:
 
 Requirements:
 - **Node ≥ 22.18** (`.nvmrc`). The shared package is loaded through Node's built-in TypeScript type stripping; on Node ≤ 20.18 the TypeORM CLI also crashes with `ERR_REQUIRE_ESM`.

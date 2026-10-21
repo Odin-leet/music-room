@@ -34,10 +34,10 @@ export class SocialAuthController {
   ) {}
 
   @ApiOperation({ summary: 'Open in a browser tab: redirects to Google sign-in (OpenID Connect)' })
-  @ApiQuery({ name: 'redirect', description: 'App deep link to return to (exp://… or musicroom://…)' })
+  @ApiQuery({ name: 'redirect', description: "Where to return: an app deep link (exp://… or musicroom://…) or the web app's /oauth page (an origin in WEB_ORIGINS)" })
   @ApiQuery({ name: 'code_challenge', description: 'PKCE S256 challenge: base64url(SHA-256(verifier)), 43 chars' })
   @ApiFoundResponse({ description: 'Redirect to Google' })
-  @ApiBadRequestResponse({ description: 'redirect is not an app deep link, or bad code_challenge' })
+  @ApiBadRequestResponse({ description: 'redirect is not an allowed return address, or bad code_challenge' })
   @Get('google/start')
   @Redirect()
   googleStart(@Query('redirect') redirect?: string, @Query('code_challenge') challenge?: string) {
@@ -62,10 +62,10 @@ export class SocialAuthController {
   }
 
   @ApiOperation({ summary: 'Open in a browser tab: redirects to Facebook login (OAuth 2.0)' })
-  @ApiQuery({ name: 'redirect', description: 'App deep link to return to (exp://… or musicroom://…)' })
+  @ApiQuery({ name: 'redirect', description: "Where to return: an app deep link (exp://… or musicroom://…) or the web app's /oauth page (an origin in WEB_ORIGINS)" })
   @ApiQuery({ name: 'code_challenge', description: 'PKCE S256 challenge: base64url(SHA-256(verifier)), 43 chars' })
   @ApiFoundResponse({ description: 'Redirect to Facebook' })
-  @ApiBadRequestResponse({ description: 'redirect is not an app deep link, or bad code_challenge' })
+  @ApiBadRequestResponse({ description: 'redirect is not an allowed return address, or bad code_challenge' })
   @Get('facebook/start')
   @Redirect()
   facebookStart(@Query('redirect') redirect?: string, @Query('code_challenge') challenge?: string) {

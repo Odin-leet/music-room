@@ -1,12 +1,10 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { webOrigins } from '../common/web-origins';
+import { isAllowedAppRedirect } from './app-redirect';
 
 // Shared by every social-login provider (Google, Facebook).
-
-// Where the API may send the browser back to: the mobile app only.
-// exp:// = Expo Go in development, musicroom:// = our own builds (app.json scheme).
-// Anything else is refused, so a crafted link can't redirect a login elsewhere.
-const ALLOWED_APP_REDIRECTS = [/^exp:\/\//, /^musicroom:\/\//];
+// Where the browser may be sent back to: see app-redirect.ts.
 
 // PKCE S256 challenge = base64url(SHA-256(verifier)) = always 43 characters.
 const PKCE_CHALLENGE = /^[A-Za-z0-9_-]{43}$/;
@@ -51,8 +49,8 @@ export class OAuthStateService {
   }
 
   private assertAllowedAppRedirect(redirect: string | undefined): string {
-    if (!redirect || !ALLOWED_APP_REDIRECTS.some((re) => re.test(redirect))) {
-      throw new BadRequestException('redirect must be an app deep link');
+    if (!redirect || !isAllowedAppRedirect(redirect, webOrigins())) {
+      throw new BadRequestException("redirect must be an app deep link or the web app's /oauth page");
     }
     return redirect;
   }

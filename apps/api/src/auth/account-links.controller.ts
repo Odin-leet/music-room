@@ -59,7 +59,7 @@ export class AccountLinksController {
   @ApiOperation({ summary: 'Start linking Google or Facebook to your account: returns the URL to open in a browser' })
   @ApiParam({ name: 'provider', enum: ['google', 'facebook'] })
   @ApiOkResponse({ type: StartLinkResultDto })
-  @ApiBadRequestResponse({ description: 'Unknown provider, redirect not an app deep link, or bad codeChallenge' })
+  @ApiBadRequestResponse({ description: 'Unknown provider, redirect not an allowed return address, or bad codeChallenge' })
   @Post('auth/:provider/link')
   @HttpCode(HttpStatus.OK)
   start(

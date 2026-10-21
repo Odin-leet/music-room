@@ -1,6 +1,7 @@
 import { ClassSerializerInterceptor, ValidationPipe } from '@nestjs/common';
 import { NestFactory, Reflector } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { webOrigins } from './common/web-origins';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
 async function bootstrap() {
@@ -14,6 +15,17 @@ async function bootstrap() {
     }),
   );
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
+
+  // The web app (apps/web) calls the API from a browser page on another
+  // origin: allow exactly its origins (WEB_ORIGINS). No cookies are used
+  // (tokens travel in the Authorization header), so no credentials either.
+  // The mobile app isn't a browser: CORS doesn't apply to it.
+  app.enableCors({
+    origin: webOrigins(),
+    allowedHeaders: ['Accept', 'Authorization', 'Content-Type', 'X-Client-Platform', 'X-Client-Device', 'X-Client-Version'],
+    exposedHeaders: ['Retry-After'],
+    maxAge: 600,
+  });
 
   // API docs: Swagger UI at /api-docs, raw OpenAPI JSON at /api-docs-json.
   // Request/response schemas come from the DTO classes (Nest Swagger compiler

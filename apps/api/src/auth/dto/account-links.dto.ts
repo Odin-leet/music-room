@@ -2,7 +2,7 @@ import type { SignInMethods } from '@music-room/shared';
 import { IsString, Matches } from 'class-validator';
 
 export class StartLinkDto {
-  /** App deep link the browser returns to. @example "exp://192.168.1.10:8081/--/oauth" */
+  /** Where the browser returns: an app deep link, or the web app's /oauth page. @example "exp://192.168.1.10:8081/--/oauth" */
   @IsString()
   redirect: string;
 

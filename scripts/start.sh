@@ -11,11 +11,28 @@ cd "$(dirname "$0")/.."
 echo
 
 # Ports must be free: say who holds one rather than killing anything.
+# Checked with Node (always there), since lsof is often missing on Linux.
+busy() {
+  node -e '
+    const net = require("node:net");
+    const port = Number(process.argv[1]);
+    const tryHost = (host) => new Promise((ok) => {
+      const s = net.connect({ port, host }, () => { s.destroy(); ok(true); });
+      s.on("error", () => ok(false));
+    });
+    Promise.all([tryHost("127.0.0.1"), tryHost("::1")]).then((r) => process.exit(r.includes(true) ? 0 : 1));
+  ' "$1"
+}
 for port in 3000 5173 $([ "${MOBILE:-1}" = 0 ] || echo 8081); do
-  pid=$(lsof -nP -iTCP:"$port" -sTCP:LISTEN -t 2>/dev/null | head -1 || true)
-  if [ -n "$pid" ]; then
-    printf '\033[31mPort %s is already in use by PID %s (%s).\033[0m\n' "$port" "$pid" "$(ps -o command= -p "$pid" | cut -c1-70)"
-    echo "Stop it (Ctrl+C in its terminal, or kill $pid), then run make start again."
+  if busy "$port"; then
+    printf '\033[31mPort %s is already in use.\033[0m\n' "$port"
+    if command -v lsof >/dev/null; then
+      pid=$(lsof -nP -iTCP:"$port" -sTCP:LISTEN -t 2>/dev/null | head -1 || true)
+      [ -z "$pid" ] || echo "By PID $pid: $(ps -o command= -p "$pid" | cut -c1-70)"
+    else
+      echo "See who holds it: ss -ltnp | grep :$port"
+    fi
+    echo "Stop it (Ctrl+C in its terminal), then run make start again."
     exit 1
   fi
 done

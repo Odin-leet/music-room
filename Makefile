@@ -9,7 +9,7 @@ ENV_FILE := .env
 help:
 	@echo "Music Room — make targets"
 	@echo ""
-	@echo "  On any laptop (needs Docker Desktop + Node 22):"
+	@echo "  On any laptop (needs Docker — Desktop, or Engine + Compose plugin on Linux — and Node 22):"
 	@echo "    make start           Everything: setup if needed, then API + web + Expo (Ctrl+C stops all)"
 	@echo "    make start-web       The same without Expo (API + web only)"
 	@echo "    make setup           Only the setup: tools check, .env files, packages, database, migrations"

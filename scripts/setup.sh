@@ -22,16 +22,36 @@ node -e '
   process.exit(maj > 22 || (maj === 22 && min >= 18) ? 0 : 1);
 ' || fail "Node $(node -v) is too old: Node >= 22.18 is needed (nvm install 22 && nvm use 22)."
 ok "Node $(node -v)"
-command -v docker >/dev/null || fail "Docker is not installed. Install Docker Desktop, start it, then run make setup again."
-if ! docker info >/dev/null 2>&1; then
-  if [ "$(uname)" = "Darwin" ]; then
-    warn "Docker Desktop is not running: starting it (up to 2 minutes)…"
-    open -a Docker || true
-    for _ in $(seq 1 60); do docker info >/dev/null 2>&1 && break; sleep 2; done
-  fi
-  docker info >/dev/null 2>&1 || fail "Docker is not running. Start Docker Desktop, then run make setup again."
+command -v docker >/dev/null ||
+  fail "Docker is not installed. macOS: Docker Desktop. Linux: Docker Engine + the Compose plugin (packages docker-ce and docker-compose-plugin)."
+if ! docker info >/dev/null 2>&1 && [ "$(uname)" = "Darwin" ]; then
+  warn "Docker Desktop is not running: starting it (up to 2 minutes)…"
+  open -a Docker || true
+  for _ in $(seq 1 60); do docker info >/dev/null 2>&1 && break; sleep 2; done
 fi
-ok "Docker $(docker version --format '{{.Server.Version}}' 2>/dev/null)"
+if ! docker info >/dev/null 2>&1; then
+  # Read the error first: with pipefail, `docker info | grep` would fail
+  # because docker itself exits non-zero, even when grep matches.
+  docker_err=$(docker info 2>&1 || true)
+  if echo "$docker_err" | grep -qi "permission denied"; then
+    # Linux: the daemon runs, but this user may not talk to its socket.
+    fail "No permission to use Docker. Run: sudo usermod -aG docker \$USER, then log out and back in (or: newgrp docker)."
+  elif [ "$(uname)" = "Darwin" ]; then
+    fail "Docker is not running. Start Docker Desktop, then run make setup again."
+  else
+    fail "The Docker daemon is not running. Run: sudo systemctl start docker (and sudo systemctl enable docker to start it at boot)."
+  fi
+fi
+# `docker compose` (v2, the plugin) — not the old `docker-compose` v1 — and
+# >= 2.1 for `up --wait` (waits until Postgres is healthy).
+compose=$(docker compose version --short 2>/dev/null || true)
+[ -n "$compose" ] || fail "The Docker Compose plugin is missing (docker compose). Linux: install docker-compose-plugin."
+node -e '
+  const [maj, min] = process.argv[1].replace(/^v/, "").split(".").map(Number);
+  process.exit(maj > 2 || (maj === 2 && min >= 1) ? 0 : 1);
+' "$compose" || fail "Docker Compose $compose is too old: 2.1 or newer is needed."
+command -v curl >/dev/null || fail "curl is not installed (Linux: sudo apt install curl)."
+ok "Docker $(docker version --format '{{.Server.Version}}' 2>/dev/null), Compose $compose"
 
 # ---------- 2. .env files ----------
 bold "2/5  Configuration"

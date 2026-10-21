@@ -66,7 +66,7 @@ Only Postgres and Mailpit run in Docker. The API and Expo run on the host on pur
 
 ## Getting started
 
-**One command, on any laptop** with Docker Desktop and Node ≥ 22.18:
+**One command, on any laptop** with Docker (Docker Desktop, or on Linux just Docker Engine + the Compose plugin) and Node ≥ 22.18:
 
 ```bash
 git clone <your-repo-url> music-room && cd music-room

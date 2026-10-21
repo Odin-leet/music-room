@@ -4,12 +4,22 @@
 
 | Tool | Why | Check |
 |---|---|---|
-| **Docker Desktop**, started | Runs Postgres and Mailpit (the fake mail inbox) | `docker info` |
+| **Docker**: Docker Desktop (macOS, Windows) **or Docker Engine + the Compose plugin** (Linux, no Desktop needed) | Runs Postgres and Mailpit (the fake mail inbox). Only `docker compose` (v2, ≥ 2.1) is used | `docker info`, `docker compose version` |
 | **Node.js ≥ 22.18** | Runs the API, the web app and Expo. 22.18 is the first version that loads the shared TypeScript package without a build step | `node -v` |
 | **Git** | To get the code | `git --version` |
 | For the phone: **Expo Go**, on the same Wi-Fi | Opens the mobile app from a QR code | — |
 
 Nothing else: no global packages, no database install.
+
+**On Linux** (Docker Engine, no Desktop):
+
+```bash
+sudo apt install docker-ce docker-compose-plugin curl   # Docker's own apt repository; or your distribution's packages
+sudo systemctl enable --now docker                      # start the daemon now and at boot
+sudo usermod -aG docker $USER                           # use docker without sudo; then log out and back in
+```
+
+Setup checks each of these and says exactly which one is missing: daemon not running, no permission on its socket, no Compose plugin, Compose too old, no curl.
 
 ## One command
 
@@ -90,8 +100,11 @@ Google and Facebook only send the browser back to **registered** addresses. The 
 | What you see | Cause → fix |
 |---|---|
 | `Node … is too old` | `nvm install 22 && nvm use 22`, then `make start` |
-| `Docker is not running` | Start Docker Desktop, then `make start` |
-| `Port 3000 is already in use by PID …` | Another API is running (often in another terminal): stop it, or `kill <PID>` |
+| `Docker is not running` (macOS) | Start Docker Desktop (setup tries itself), then `make start` |
+| `The Docker daemon is not running` (Linux) | `sudo systemctl start docker` |
+| `No permission to use Docker` (Linux) | `sudo usermod -aG docker $USER`, log out and back in (or `newgrp docker`) |
+| `The Docker Compose plugin is missing` | Install `docker-compose-plugin` (the old `docker-compose` v1 isn't supported) |
+| `Port 3000 is already in use` | Another API is running (often in another terminal): stop it. It names the process (`lsof`), or tells you to run `ss -ltnp \| grep :3000` on Linux |
 | `The API didn't start` + log lines | Read them: usually a bad value in `.env` |
 | The phone can't reach the server | Same Wi-Fi? The address in Server settings must be the laptop's IP. Some school / guest Wi-Fis block devices from seeing each other → use the emulator, or a phone hotspot |
 | `relation … does not exist` | Migrations didn't run: `make setup` |

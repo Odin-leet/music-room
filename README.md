@@ -71,7 +71,7 @@ Only Postgres and Mailpit run in Docker. The API and Expo run on the host on pur
 ```bash
 git clone <your-repo-url> music-room && cd music-room
 cp /path/to/your/.env .env    # optional: your .env with the Google / Facebook keys
-make start                    # setup if needed (tools, .env files, packages, DB, migrations), then API + web + Expo
+make start                    # setup if needed (tools, .env files, packages, DB, migrations), then API + web + Expo (tunnel: phones on any network)
 ```
 
 It prints the addresses (web app, API docs, Mailpit, the address for a phone) and keeps Expo in the foreground with its QR code; Ctrl+C stops everything. `make start-web` does the same without Expo, `make logs` follows the server logs. What each step does: [docs/technical/01-running.md](docs/technical/01-running.md).

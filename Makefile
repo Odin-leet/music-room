@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 ENV_FILE := .env
 
-.PHONY: help setup start start-web logs env install scaffold-api scaffold-mobile \
+.PHONY: help setup start start-web start-lan logs env install scaffold-api scaffold-mobile \
         db-up db-down db-logs db-shell \
         migrate migration-generate migration-revert \
         dev dev-api dev-mobile dev-web build test lint load-test clean
@@ -10,7 +10,8 @@ help:
 	@echo "Music Room — make targets"
 	@echo ""
 	@echo "  On any laptop (needs Docker — Desktop, or Engine + Compose plugin on Linux — and Node 22):"
-	@echo "    make start           Everything: setup if needed, then API + web + Expo (Ctrl+C stops all)"
+	@echo "    make start           Everything: setup if needed, then API + web + Expo in tunnel mode (Ctrl+C stops all)"
+	@echo "    make start-lan       The same, Expo on the Wi-Fi only (no tunnel)"
 	@echo "    make start-web       The same without Expo (API + web only)"
 	@echo "    make setup           Only the setup: tools check, .env files, packages, database, migrations"
 	@echo "    make logs            Follow the API + web logs while make start runs"
@@ -48,6 +49,9 @@ start:
 
 start-web:
 	@MOBILE=0 ./scripts/start.sh
+
+start-lan:
+	@EXPO_TUNNEL=0 ./scripts/start.sh
 
 logs:
 	@mkdir -p .logs && touch .logs/servers.log

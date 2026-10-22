@@ -7,7 +7,7 @@
 | **Docker**: Docker Desktop (macOS, Windows) **or Docker Engine + the Compose plugin** (Linux, no Desktop needed) | Runs Postgres and Mailpit (the fake mail inbox). Only `docker compose` (v2, ≥ 2.1) is used | `docker info`, `docker compose version` |
 | **Node.js ≥ 22.18** | Runs the API, the web app and Expo. 22.18 is the first version that loads the shared TypeScript package without a build step | `node -v` |
 | **Git** | To get the code | `git --version` |
-| For the phone: **Expo Go**, on the same Wi-Fi | Opens the mobile app from a QR code | — |
+| For the phone: **Expo Go** | Opens the mobile app from a QR code (any network with the tunnel, see [Phones](#phones-tunnel-and-the-api-address)) | — |
 
 Nothing else: no global packages, no database install.
 
@@ -42,7 +42,11 @@ flowchart TD
   P -- no --> X["Says which process holds the port, stops (never kills it)"]
   P -- yes --> B["API (watch mode) + web app in the background<br/>logs in .logs/servers.log"]
   B --> H["Waits for /health and the web page"]
-  H --> E["Expo in the foreground: QR code + keys"]
+  H --> T{"NGROK_DOMAIN in .env?"}
+  T -- "yes" --> TA["phone → API: https://NGROK_DOMAIN"]
+  T -- "no" --> TL["phone → API: http://laptop-Wi-Fi-IP:3000"]
+  TA --> E["Expo in the foreground, --tunnel: QR code + keys<br/>(3 tries, then Wi-Fi mode)"]
+  TL --> E
   E --> C["Ctrl+C: stops Expo, then the API and the web app"]
 ```
 
@@ -53,13 +57,15 @@ HOLY is running
 Web app        http://localhost:5173
 API docs       http://localhost:3000/api-docs
 Emails (codes) http://localhost:8025
-Phone (Expo Go, same Wi-Fi): Server settings → http://<laptop IP>:3000
+Phone app      Expo Go, scan the QR code (tunnel: any network)
+Phone → API    https://<NGROK_DOMAIN>   (public: any network)  — or http://<laptop IP>:3000 (same Wi-Fi only)
 Server logs    make logs   (in another terminal)
 ```
 
 | Command | What |
 |---|---|
 | `make start` | Everything (setup, API, web, Expo) |
+| `make start-lan` | The same with Expo on the Wi-Fi only (no tunnel) |
 | `make start-web` | The same without Expo |
 | `make setup` | Only the setup steps |
 | `make logs` | Follow the API and web logs, including the JSON action log (V.6) |
@@ -82,8 +88,23 @@ All three are git-ignored. Setup never overwrites an existing one, and never pri
 ## Using the apps
 
 - **Web:** open http://localhost:5173. Register, then the 6-digit code arrives in Mailpit (http://localhost:8025).
-- **Phone:** scan the QR code with Expo Go (Android) or the Camera (iOS). On the first screen, **Server: … · change** must show `http://<laptop IP>:3000` (setup put it in `apps/mobile/.env`; it can be changed in the app at any time, brief V.5).
+- **Phone:** scan the QR code with Expo Go (Android) or the Camera (iOS). On the first screen, **Server: … · change** must show the "Phone → API" address from the banner. `make start` gives it to the app; an address saved earlier in the app's Server settings wins, so change it there if needed (brief V.5).
 - **Android emulator:** press `a` in the Expo terminal. The API address for the emulator is `http://10.0.2.2:3000`. For Google sign-in run `adb reverse tcp:3000 tcp:3000` after each emulator start.
+
+## Phones: tunnel and the API address
+
+A phone needs two things from the laptop:
+
+| | What | How it's reached |
+|---|---|---|
+| 1 | **The app's code**, from Metro (Expo's bundler) | `make start` runs Expo with **`--tunnel`**: a public `exp://….exp.direct` address, so the phone can be on **any network** (4G, another Wi-Fi). `make start-lan` = same Wi-Fi only |
+| 2 | **The API** | With `NGROK_DOMAIN` + `NGROK_AUTHTOKEN` in `.env` (a free ngrok account and its free static domain), the API opens `https://<NGROK_DOMAIN>` at start, and `make start` gives that address to the app → any network. Without them: `http://<laptop Wi-Fi IP>:3000`, **same Wi-Fi only** |
+
+So for a phone on **any** network you need both: the tunnel (automatic) **and** `NGROK_DOMAIN` (once, in `.env`). On the same Wi-Fi, neither is needed.
+
+**The tunnel isn't ours.** `--tunnel` goes through **Expo's own ngrok account**, shared by every Expo user in the world. It is sometimes full: *"Your account is limited to 5000 simultaneous ngrok agent sessions" (ERR_NGROK_108)*, seen while testing this. So `make start` tries it **3 times**, then falls back to Wi-Fi mode and says so, instead of failing. For the defense: have the phone on the laptop's Wi-Fi (or the laptop on the phone's hotspot) as the safe path.
+
+**Sign in with Google on a phone** also needs the public API address: Google sends the browser back to `https://<NGROK_DOMAIN>/auth/google/callback`, which must be registered in Google Cloud (and in Facebook Login for Facebook). See the README → "Testing on a real phone".
 
 ## Google / Facebook on another laptop
 
@@ -106,7 +127,8 @@ Google and Facebook only send the browser back to **registered** addresses. The 
 | `The Docker Compose plugin is missing` | Install `docker-compose-plugin` (the old `docker-compose` v1 isn't supported) |
 | `Port 3000 is already in use` | Another API is running (often in another terminal): stop it. It names the process (`lsof`), or tells you to run `ss -ltnp \| grep :3000` on Linux |
 | `The API didn't start` + log lines | Read them: usually a bad value in `.env` |
-| The phone can't reach the server | Same Wi-Fi? The address in Server settings must be the laptop's IP. Some school / guest Wi-Fis block devices from seeing each other → use the emulator, or a phone hotspot |
+| The phone can't reach the server | Look at "Phone → API" in the banner. Wi-Fi address: same Wi-Fi? Some school / guest Wi-Fis block devices from seeing each other → put the laptop on the phone's hotspot, or set `NGROK_DOMAIN`. The address in the app's Server settings must be the banner's |
+| `Expo's tunnel did not open (attempt n/3)` | Expo's shared tunnel service is full or down (not our setup). It falls back to Wi-Fi by itself; retry later for the tunnel |
 | `relation … does not exist` | Migrations didn't run: `make setup` |
 | A test account needs its code | Mailpit: http://localhost:8025 |
 
@@ -115,7 +137,7 @@ Google and Facebook only send the browser back to **registered** addresses. The 
 | File | What |
 |---|---|
 | `scripts/setup.sh` | The five setup steps |
-| `scripts/start.sh` | Ports check, background servers, Expo in the foreground, clean stop |
+| `scripts/start.sh` | Ports check, background servers, the phone's API address, Expo in tunnel mode (with fallback) in the foreground, clean stop |
 | `Makefile` | Every command (`make help`) |
 | `docker-compose.yml` | Postgres 16 and Mailpit, bound to 127.0.0.1 only |
 | `.env.example`, `apps/*/.env.example` | Every setting, with comments |
